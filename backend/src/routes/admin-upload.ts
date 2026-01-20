@@ -3,9 +3,30 @@ import type { App } from '../index.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Helper function to check admin status
+async function requireAdmin(app: App, requireAuth: any, request: any, reply: any) {
+  const session = await requireAuth(request, reply);
+
+  if (!session || !session.user) {
+    app.logger.warn({}, 'Unauthorized: No authenticated user');
+    return reply.code(401).send({ error: 'Unauthorized' });
+  }
+
+  if (session.user.role !== 'admin') {
+    app.logger.warn({ userId: session.user.id }, 'Forbidden: User is not admin');
+    return reply.code(403).send({ error: 'Forbidden: Admin access required' });
+  }
+
+  return session;
+}
+
 export function register(app: App, fastify: FastifyInstance) {
+  const requireAuthFunc = app.requireAuth();
   // POST /api/admin/upload/image - Upload image file
   fastify.post('/api/admin/upload/image', async (request, reply) => {
+    const session = await requireAdmin(app, requireAuthFunc, request, reply);
+    if (!session) return;
+
     app.logger.info({}, 'Processing image upload');
     try {
       const data = await request.file();

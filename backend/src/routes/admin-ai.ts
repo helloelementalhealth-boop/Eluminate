@@ -3,9 +3,30 @@ import { gateway } from '@specific-dev/framework';
 import { generateText } from 'ai';
 import type { App } from '../index.js';
 
+// Helper function to check admin status
+async function requireAdmin(app: App, requireAuth: any, request: any, reply: any) {
+  const session = await requireAuth(request, reply);
+
+  if (!session || !session.user) {
+    app.logger.warn({}, 'Unauthorized: No authenticated user');
+    return reply.code(401).send({ error: 'Unauthorized' });
+  }
+
+  if (session.user.role !== 'admin') {
+    app.logger.warn({ userId: session.user.id }, 'Forbidden: User is not admin');
+    return reply.code(403).send({ error: 'Forbidden: Admin access required' });
+  }
+
+  return session;
+}
+
 export function register(app: App, fastify: FastifyInstance) {
+  const requireAuthFunc = app.requireAuth();
   // POST /api/admin/ai/generate-content - Generate content based on prompt
   fastify.post('/api/admin/ai/generate-content', async (request, reply) => {
+    const session = await requireAdmin(app, requireAuthFunc, request, reply);
+    if (!session) return;
+
     const body = request.body as {
       prompt: string;
       contentType: 'text' | 'description' | 'features';
@@ -44,6 +65,9 @@ export function register(app: App, fastify: FastifyInstance) {
 
   // POST /api/admin/ai/improve-content - Improve existing content
   fastify.post('/api/admin/ai/improve-content', async (request, reply) => {
+    const session = await requireAdmin(app, requireAuthFunc, request, reply);
+    if (!session) return;
+
     const body = request.body as {
       content: string;
       improvementType: 'clarity' | 'tone' | 'length' | 'engagement';
@@ -79,6 +103,9 @@ export function register(app: App, fastify: FastifyInstance) {
 
   // POST /api/admin/ai/generate-features - Generate feature list for subscription plan
   fastify.post('/api/admin/ai/generate-features', async (request, reply) => {
+    const session = await requireAdmin(app, requireAuthFunc, request, reply);
+    if (!session) return;
+
     const body = request.body as {
       planName: string;
       planType: 'basic' | 'premium' | 'enterprise';

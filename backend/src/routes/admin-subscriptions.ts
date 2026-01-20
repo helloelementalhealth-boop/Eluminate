@@ -3,7 +3,25 @@ import { eq, desc } from 'drizzle-orm';
 import { adminSubscriptionPlans } from '../db/schema.js';
 import type { App } from '../index.js';
 
+// Helper function to check admin status
+async function requireAdmin(app: App, requireAuth: any, request: any, reply: any) {
+  const session = await requireAuth(request, reply);
+
+  if (!session || !session.user) {
+    app.logger.warn({}, 'Unauthorized: No authenticated user');
+    return reply.code(401).send({ error: 'Unauthorized' });
+  }
+
+  if (session.user.role !== 'admin') {
+    app.logger.warn({ userId: session.user.id }, 'Forbidden: User is not admin');
+    return reply.code(403).send({ error: 'Forbidden: Admin access required' });
+  }
+
+  return session;
+}
+
 export function register(app: App, fastify: FastifyInstance) {
+  const requireAuthFunc = app.requireAuth();
   // GET /api/admin/subscriptions - Returns all subscription plans
   fastify.get('/api/admin/subscriptions', async (request, reply) => {
     app.logger.info({}, 'Fetching all subscription plans');
@@ -36,6 +54,9 @@ export function register(app: App, fastify: FastifyInstance) {
 
   // POST /api/admin/subscriptions - Create subscription plan
   fastify.post('/api/admin/subscriptions', async (request, reply) => {
+    const session = await requireAdmin(app, requireAuthFunc, request, reply);
+    if (!session) return;
+
     const body = request.body as {
       planName: string;
       planDescription?: string;
@@ -84,6 +105,9 @@ export function register(app: App, fastify: FastifyInstance) {
 
   // PUT /api/admin/subscriptions/:id - Update subscription plan
   fastify.put('/api/admin/subscriptions/:id', async (request, reply) => {
+    const session = await requireAdmin(app, requireAuthFunc, request, reply);
+    if (!session) return;
+
     const { id } = request.params as { id: string };
     const body = request.body as {
       planName?: string;
@@ -143,6 +167,9 @@ export function register(app: App, fastify: FastifyInstance) {
 
   // DELETE /api/admin/subscriptions/:id - Delete subscription plan
   fastify.delete('/api/admin/subscriptions/:id', async (request, reply) => {
+    const session = await requireAdmin(app, requireAuthFunc, request, reply);
+    if (!session) return;
+
     const { id } = request.params as { id: string };
 
     app.logger.info({ id }, 'Deleting subscription plan');

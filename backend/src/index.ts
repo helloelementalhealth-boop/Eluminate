@@ -1,5 +1,6 @@
 import { createApplication } from "@specific-dev/framework";
-import * as schema from './db/schema.js';
+import * as appSchema from './db/schema.js';
+import * as authSchema from './db/auth-schema.js';
 import * as journalRoutes from './routes/journal.js';
 import * as nutritionRoutes from './routes/nutrition.js';
 import * as workoutRoutes from './routes/workouts.js';
@@ -16,12 +17,19 @@ import * as adminCategoriesRoutes from './routes/admin-categories.js';
 import * as adminSubscriptionsRoutes from './routes/admin-subscriptions.js';
 import * as adminAiRoutes from './routes/admin-ai.js';
 import * as adminUploadRoutes from './routes/admin-upload.js';
+import * as adminAuthRoutes from './routes/admin-auth.js';
+
+// Combine schemas
+const schema = { ...appSchema, ...authSchema };
 
 // Create application with schema for full database type support
 export const app = await createApplication(schema);
 
 // Export App type for use in route files
 export type App = typeof app;
+
+// Enable Better Auth
+app.withAuth();
 
 // Register all route modules
 journalRoutes.register(app, app.fastify);
@@ -40,6 +48,7 @@ adminCategoriesRoutes.register(app, app.fastify);
 adminSubscriptionsRoutes.register(app, app.fastify);
 adminAiRoutes.register(app, app.fastify);
 adminUploadRoutes.register(app, app.fastify);
+adminAuthRoutes.register(app, app.fastify);
 
 await app.run();
 app.logger.info('Application running');
