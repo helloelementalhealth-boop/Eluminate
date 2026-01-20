@@ -16,6 +16,7 @@ import { colors, moodColors } from '@/styles/commonStyles';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { journalApi, JournalEntry } from '@/utils/api';
 import * as Haptics from 'expo-haptics';
+import AnimatedHello from '@/components/AnimatedHello';
 
 const moods: { [key: string]: { label: string; emoji: string } } = {
   calm: { label: 'Calm', emoji: '🌊' },
@@ -130,13 +131,7 @@ export default function HistoryScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
         <View style={styles.centerContainer}>
-          <Text style={[styles.emptyEmoji, { color: theme.textSecondary }]}>📖</Text>
-          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-            No journal entries yet
-          </Text>
-          <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
-            Start writing to see your entries here
-          </Text>
+          <AnimatedHello color={theme.text} secondaryColor={theme.textSecondary} />
         </View>
       </SafeAreaView>
     );
@@ -296,18 +291,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptySubtext: {
-    fontSize: 14,
     textAlign: 'center',
   },
   entryContainer: {

@@ -112,7 +112,12 @@ export default function FitnessScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
       <View style={[styles.header, Platform.OS === 'android' && { paddingTop: 48 }]}>
-        <Text style={[styles.title, { color: theme.text }]}>Fitness</Text>
+        <View>
+          <Text style={[styles.title, { color: theme.text }]}>Movement</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            Track your active sessions
+          </Text>
+        </View>
         <TouchableOpacity
           onPress={() => setModalVisible(true)}
           style={[styles.addButton, { backgroundColor: theme.primary }]}
@@ -349,7 +354,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 20,
@@ -358,6 +363,11 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 15,
+    lineHeight: 22,
   },
   addButton: {
     width: 44,
