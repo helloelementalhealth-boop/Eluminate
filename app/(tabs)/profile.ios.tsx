@@ -94,210 +94,226 @@ export default function ProfileScreen() {
   );
 
   return (
-    <>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Stack.Screen
         options={{
-          headerShown: false,
-        }}
-      />
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Profile</Text>
-        </View>
-
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={loadData} tintColor={theme.primary} />
-          }
-        >
-          {/* Premium Card */}
-          <Animated.View
-            entering={FadeInDown.duration(300)}
-            style={[styles.premiumCard, { backgroundColor: theme.primary }]}
-          >
-            <View style={styles.premiumContent}>
-              <View style={styles.premiumBadge}>
-                <IconSymbol ios_icon_name="star" android_material_icon_name="star" size={16} color="#FFFFFF" />
-                <Text style={styles.premiumBadgeText}>Premium</Text>
-              </View>
-              <Text style={styles.premiumTitle}>Unlock Your Full Potential</Text>
-              <Text style={styles.premiumSubtitle}>
-                Get personalized insights, advanced tracking, and exclusive content
-              </Text>
-              <TouchableOpacity
-                style={styles.upgradeButton}
-                onPress={handleUpgrade}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.upgradeButtonText, { color: theme.primary }]}>
-                  Upgrade to Premium
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-
-          {/* Daily Activity */}
-          <Animated.View entering={FadeInDown.delay(100).duration(300)}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Today&apos;s Activity</Text>
-            <View style={styles.activityGrid}>
-              <ActivityCard
-                icon="directions-walk"
-                label="Steps"
-                value={activities?.steps || 0}
-                unit="steps"
+          headerShown: true,
+          title: 'Profile',
+          headerLargeTitle: true,
+          headerStyle: { backgroundColor: theme.background },
+          headerTintColor: theme.text,
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => {
+                console.log('[ProfileScreen] User tapped Admin Control');
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/admin/');
+              }}
+              style={[styles.adminButton, { backgroundColor: theme.primary + '20' }]}
+            >
+              <IconSymbol
+                ios_icon_name="settings"
+                android_material_icon_name="settings"
+                size={20}
                 color={theme.primary}
               />
-              <ActivityCard
-                icon="bedtime"
-                label="Sleep"
-                value={activities?.sleep_hours || 0}
-                unit="hours"
-                color={theme.success}
-              />
-              <ActivityCard
-                icon="water-drop"
-                label="Water"
-                value={activities?.water_glasses || 0}
-                unit="glasses"
-                color={theme.warning}
-              />
-              <ActivityCard
-                icon="mood"
-                label="Mood"
-                value={activities?.mood_rating || 0}
-                unit="/10"
-                color={theme.error}
-              />
-            </View>
-          </Animated.View>
+            </TouchableOpacity>
+          ),
+        }}
+      />
 
-          {/* Wellness Goals */}
-          <Animated.View entering={FadeInDown.delay(200).duration(300)}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Wellness Goals</Text>
-            {goals.length === 0 ? (
-              <View style={[styles.goalsCard, { backgroundColor: theme.card }]}>
-                <Text style={[styles.emptyGoalsText, { color: theme.textSecondary }]}>
-                  No goals set yet. Set your first wellness goal to start tracking progress.
-                </Text>
-              </View>
-            ) : (
-              goals.slice(0, 5).map((goal, index) => (
-                <View key={goal.id} style={[styles.goalCard, { backgroundColor: theme.card }]}>
-                  <View style={styles.goalHeader}>
-                    <Text style={[styles.goalTitle, { color: theme.text }]}>
-                      {goal.goal_type.replace(/_/g, ' ')}
-                    </Text>
-                    <Text style={[styles.goalStreak, { color: theme.primary }]}>
-                      {goal.current_streak} day streak
-                    </Text>
-                  </View>
-                  <Text style={[styles.goalTarget, { color: theme.textSecondary }]}>
-                    Target: {goal.target_value}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={loadData} tintColor={theme.primary} />
+        }
+      >
+        {/* Premium Card */}
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          style={[styles.premiumCard, { backgroundColor: theme.primary }]}
+        >
+          <View style={styles.premiumContent}>
+            <View style={styles.premiumBadge}>
+              <IconSymbol ios_icon_name="star" android_material_icon_name="star" size={16} color="#FFFFFF" />
+              <Text style={styles.premiumBadgeText}>Premium</Text>
+            </View>
+            <Text style={styles.premiumTitle}>Unlock Your Full Potential</Text>
+            <Text style={styles.premiumSubtitle}>
+              Get personalized insights, advanced tracking, and exclusive content
+            </Text>
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={handleUpgrade}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.upgradeButtonText, { color: theme.primary }]}>
+                Upgrade to Premium
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+
+        {/* Daily Activity */}
+        <Animated.View entering={FadeInDown.delay(100).duration(300)}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Today&apos;s Activity</Text>
+          <View style={styles.activityGrid}>
+            <ActivityCard
+              icon="directions-walk"
+              label="Steps"
+              value={activities?.steps || 0}
+              unit="steps"
+              color={theme.primary}
+            />
+            <ActivityCard
+              icon="bedtime"
+              label="Sleep"
+              value={activities?.sleep_hours || 0}
+              unit="hours"
+              color={theme.success}
+            />
+            <ActivityCard
+              icon="water-drop"
+              label="Water"
+              value={activities?.water_glasses || 0}
+              unit="glasses"
+              color={theme.warning}
+            />
+            <ActivityCard
+              icon="mood"
+              label="Mood"
+              value={activities?.mood_rating || 0}
+              unit="/10"
+              color={theme.error}
+            />
+          </View>
+        </Animated.View>
+
+        {/* Wellness Goals */}
+        <Animated.View entering={FadeInDown.delay(200).duration(300)}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Wellness Goals</Text>
+          {goals.length === 0 ? (
+            <View style={[styles.goalsCard, { backgroundColor: theme.card }]}>
+              <Text style={[styles.emptyGoalsText, { color: theme.textSecondary }]}>
+                No goals set yet. Set your first wellness goal to start tracking progress.
+              </Text>
+            </View>
+          ) : (
+            goals.slice(0, 5).map((goal, index) => (
+              <View key={goal.id} style={[styles.goalCard, { backgroundColor: theme.card }]}>
+                <View style={styles.goalHeader}>
+                  <Text style={[styles.goalTitle, { color: theme.text }]}>
+                    {goal.goal_type.replace(/_/g, ' ')}
+                  </Text>
+                  <Text style={[styles.goalStreak, { color: theme.primary }]}>
+                    {goal.current_streak} day streak
                   </Text>
                 </View>
-              ))
-            )}
-          </Animated.View>
+                <Text style={[styles.goalTarget, { color: theme.textSecondary }]}>
+                  Target: {goal.target_value}
+                </Text>
+              </View>
+            ))
+          )}
+        </Animated.View>
 
-          {/* Settings */}
-          <Animated.View entering={FadeInDown.delay(300).duration(300)}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Settings</Text>
-            <View style={[styles.settingsCard, { backgroundColor: theme.card }]}>
-              <TouchableOpacity 
-                style={styles.settingItem} 
-                activeOpacity={0.7}
-                onPress={() => {
-                  console.log('[ProfileScreen] User tapped Visual Themes');
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/(tabs)/theme-settings');
-                }}
-              >
-                <View style={styles.settingLeft}>
-                  <IconSymbol
-                    ios_icon_name="palette"
-                    android_material_icon_name="palette"
-                    size={20}
-                    color={theme.text}
-                  />
-                  <Text style={[styles.settingText, { color: theme.text }]}>Visual Themes</Text>
-                </View>
+        {/* Settings */}
+        <Animated.View entering={FadeInDown.delay(300).duration(300)}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Settings</Text>
+          <View style={[styles.settingsCard, { backgroundColor: theme.card }]}>
+            <TouchableOpacity 
+              style={styles.settingItem} 
+              activeOpacity={0.7}
+              onPress={() => {
+                console.log('[ProfileScreen] User tapped Visual Themes');
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/(tabs)/theme-settings');
+              }}
+            >
+              <View style={styles.settingLeft}>
                 <IconSymbol
-                  ios_icon_name="chevron-right"
-                  android_material_icon_name="chevron-right"
+                  ios_icon_name="palette"
+                  android_material_icon_name="palette"
                   size={20}
-                  color={theme.textSecondary}
+                  color={theme.text}
                 />
-              </TouchableOpacity>
+                <Text style={[styles.settingText, { color: theme.text }]}>Visual Themes</Text>
+              </View>
+              <IconSymbol
+                ios_icon_name="chevron-right"
+                android_material_icon_name="chevron-right"
+                size={20}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
 
-              <View style={[styles.settingDivider, { backgroundColor: theme.border }]} />
+            <View style={[styles.settingDivider, { backgroundColor: theme.border }]} />
 
-              <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-                <View style={styles.settingLeft}>
-                  <IconSymbol
-                    ios_icon_name="notifications"
-                    android_material_icon_name="notifications"
-                    size={20}
-                    color={theme.text}
-                  />
-                  <Text style={[styles.settingText, { color: theme.text }]}>Notifications</Text>
-                </View>
+            <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+              <View style={styles.settingLeft}>
                 <IconSymbol
-                  ios_icon_name="chevron-right"
-                  android_material_icon_name="chevron-right"
+                  ios_icon_name="notifications"
+                  android_material_icon_name="notifications"
                   size={20}
-                  color={theme.textSecondary}
+                  color={theme.text}
                 />
-              </TouchableOpacity>
+                <Text style={[styles.settingText, { color: theme.text }]}>Notifications</Text>
+              </View>
+              <IconSymbol
+                ios_icon_name="chevron-right"
+                android_material_icon_name="chevron-right"
+                size={20}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
 
-              <View style={[styles.settingDivider, { backgroundColor: theme.border }]} />
+            <View style={[styles.settingDivider, { backgroundColor: theme.border }]} />
 
-              <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-                <View style={styles.settingLeft}>
-                  <IconSymbol
-                    ios_icon_name="lock"
-                    android_material_icon_name="lock"
-                    size={20}
-                    color={theme.text}
-                  />
-                  <Text style={[styles.settingText, { color: theme.text }]}>Privacy</Text>
-                </View>
+            <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+              <View style={styles.settingLeft}>
                 <IconSymbol
-                  ios_icon_name="chevron-right"
-                  android_material_icon_name="chevron-right"
+                  ios_icon_name="lock"
+                  android_material_icon_name="lock"
                   size={20}
-                  color={theme.textSecondary}
+                  color={theme.text}
                 />
-              </TouchableOpacity>
+                <Text style={[styles.settingText, { color: theme.text }]}>Privacy</Text>
+              </View>
+              <IconSymbol
+                ios_icon_name="chevron-right"
+                android_material_icon_name="chevron-right"
+                size={20}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
 
-              <View style={[styles.settingDivider, { backgroundColor: theme.border }]} />
+            <View style={[styles.settingDivider, { backgroundColor: theme.border }]} />
 
-              <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
-                <View style={styles.settingLeft}>
-                  <IconSymbol
-                    ios_icon_name="help"
-                    android_material_icon_name="help"
-                    size={20}
-                    color={theme.text}
-                  />
-                  <Text style={[styles.settingText, { color: theme.text }]}>Help & Support</Text>
-                </View>
+            <TouchableOpacity style={styles.settingItem} activeOpacity={0.7}>
+              <View style={styles.settingLeft}>
                 <IconSymbol
-                  ios_icon_name="chevron-right"
-                  android_material_icon_name="chevron-right"
+                  ios_icon_name="help"
+                  android_material_icon_name="help"
                   size={20}
-                  color={theme.textSecondary}
+                  color={theme.text}
                 />
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
+                <Text style={[styles.settingText, { color: theme.text }]}>Help & Support</Text>
+              </View>
+              <IconSymbol
+                ios_icon_name="chevron-right"
+                android_material_icon_name="chevron-right"
+                size={20}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
 
-          <View style={{ height: 100 }} />
-        </ScrollView>
-      </View>
-    </>
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -305,21 +321,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+  adminButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
   },
   scrollView: {
     flex: 1,
   },
   content: {
     paddingHorizontal: 24,
+    paddingTop: 8,
   },
   premiumCard: {
     borderRadius: 20,

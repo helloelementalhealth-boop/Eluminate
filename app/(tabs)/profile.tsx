@@ -99,6 +99,21 @@ export default function ProfileScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
       <View style={[styles.header, Platform.OS === 'android' && { paddingTop: 48 }]}>
         <Text style={[styles.title, { color: theme.text }]}>Profile</Text>
+        <TouchableOpacity
+          onPress={() => {
+            console.log('[ProfileScreen] User tapped Admin Control');
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/admin/');
+          }}
+          style={[styles.adminButton, { backgroundColor: theme.primary + '20' }]}
+        >
+          <IconSymbol
+            ios_icon_name="settings"
+            android_material_icon_name="settings"
+            size={20}
+            color={theme.primary}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -304,11 +319,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
     letterSpacing: -0.5,
+  },
+  adminButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,

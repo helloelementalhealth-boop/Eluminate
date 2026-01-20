@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Hello Wellness",
-    "slug": "HelloWellness",
+    "name": "Fl\u014dWell",
+    "slug": "Fl\u014dWell",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -45,5 +45,5 @@
       "backendUrl": "https://f6zxnwj9c7xqqhn7mz2mjxa4nqkubn38.app.specular.dev"
     }
   },
-  "scheme": "HelloWellness"
+  "scheme": "Fl\u014dWell"
 }
