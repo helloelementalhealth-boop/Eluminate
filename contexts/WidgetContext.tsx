@@ -229,3 +229,87 @@ export function useTheme() {
   }
   return context;
 }
+
+// Admin Authentication Context
+interface AdminAuthContextType {
+  isAdmin: boolean;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
+}
+
+const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
+
+export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      console.log('[AdminAuth] Checking authentication status');
+      const { adminAuthApi } = await import('@/utils/adminApi');
+      const response = await adminAuthApi.checkAuth();
+      setIsAdmin(response.isAdmin);
+      console.log('[AdminAuth] Auth status:', response.isAdmin);
+    } catch (error) {
+      console.error('[AdminAuth] Failed to check auth:', error);
+      setIsAdmin(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const login = async (username: string, password: string): Promise<boolean> => {
+    try {
+      console.log('[AdminAuth] Attempting login');
+      const { adminAuthApi } = await import('@/utils/adminApi');
+      const response = await adminAuthApi.login(username, password);
+      
+      if (response.success && response.isAdmin) {
+        setIsAdmin(true);
+        console.log('[AdminAuth] Login successful');
+        return true;
+      } else {
+        console.log('[AdminAuth] Login failed - not admin or invalid credentials');
+        return false;
+      }
+    } catch (error) {
+      console.error('[AdminAuth] Login error:', error);
+      return false;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      console.log('[AdminAuth] Logging out');
+      const { adminAuthApi } = await import('@/utils/adminApi');
+      await adminAuthApi.logout();
+      setIsAdmin(false);
+      console.log('[AdminAuth] Logout successful');
+    } catch (error) {
+      console.error('[AdminAuth] Logout error:', error);
+      // Still set isAdmin to false even if API call fails
+      setIsAdmin(false);
+    }
+  };
+
+  return (
+    <AdminAuthContext.Provider value={{ isAdmin, isLoading, login, logout, checkAuth }}>
+      {children}
+    </AdminAuthContext.Provider>
+  );
+}
+
+export function useAdminAuth() {
+  const context = useContext(AdminAuthContext);
+  if (context === undefined) {
+    throw new Error('useAdminAuth must be used within an AdminAuthProvider');
+  }
+  return context;
+}

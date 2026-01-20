@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,19 +8,28 @@ import {
   TouchableOpacity,
   useColorScheme,
   Platform,
+  TextInput,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { useTheme } from '@/contexts/WidgetContext';
+import { useTheme, useAdminAuth } from '@/contexts/WidgetContext';
 import * as Haptics from 'expo-haptics';
 
 export default function AdminDashboard() {
   const colorScheme = useColorScheme();
   const { currentTheme: theme } = useTheme();
   const router = useRouter();
+  const { isAdmin, isLoading, login, logout } = useAdminAuth();
+  
+  // Login form state
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
 
   const adminSections = [
     {
@@ -71,6 +80,174 @@ export default function AdminDashboard() {
     router.push(route as any);
   };
 
+  const handleLogin = async () => {
+    if (!username || !password) {
+      Alert.alert('Error', 'Please enter username and password');
+      return;
+    }
+
+    console.log('[AdminDashboard] Attempting login');
+    setLoggingIn(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      const success = await login(username, password);
+      if (success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert('Success', 'Welcome, Admin!');
+        setUsername('');
+        setPassword('');
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('Error', 'Invalid credentials. Please try again.');
+      }
+    } catch (error) {
+      console.error('[AdminDashboard] Login error:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Login failed. Please try again.');
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            console.log('[AdminDashboard] Logging out');
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            await logout();
+            Alert.alert('Success', 'You have been logged out');
+          },
+        },
+      ]
+    );
+  };
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'Admin Control',
+            headerStyle: { backgroundColor: theme.background },
+            headerTintColor: theme.text,
+            headerShadowVisible: false,
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+            Checking authentication...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show login form if not authenticated
+  if (!isAdmin) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'Admin Login',
+            headerStyle: { backgroundColor: theme.background },
+            headerTintColor: theme.text,
+            headerShadowVisible: false,
+          }}
+        />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.loginContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[styles.loginCard, { backgroundColor: theme.card }]}>
+            <View style={[styles.lockIcon, { backgroundColor: theme.primary + '20' }]}>
+              <IconSymbol
+                ios_icon_name="lock"
+                android_material_icon_name="lock"
+                size={48}
+                color={theme.primary}
+              />
+            </View>
+            <Text style={[styles.loginTitle, { color: theme.text }]}>Admin Access Required</Text>
+            <Text style={[styles.loginSubtitle, { color: theme.textSecondary }]}>
+              Please login with your admin credentials to access the control panel
+            </Text>
+
+            <View style={styles.loginForm}>
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Username</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+                value={username}
+                onChangeText={setUsername}
+                placeholder="Enter username"
+                placeholderTextColor={theme.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <Text style={[styles.inputLabel, { color: theme.text }]}>Password</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.background, color: theme.text, borderColor: theme.border }]}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter password"
+                placeholderTextColor={theme.textSecondary}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <TouchableOpacity
+                style={[styles.loginButton, { backgroundColor: theme.primary }]}
+                onPress={handleLogin}
+                disabled={loggingIn}
+                activeOpacity={0.8}
+              >
+                {loggingIn ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <IconSymbol
+                      ios_icon_name="login"
+                      android_material_icon_name="login"
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.loginButtonText}>Login</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.infoBox, { backgroundColor: theme.primary + '10' }]}>
+              <IconSymbol
+                ios_icon_name="info"
+                android_material_icon_name="info"
+                size={16}
+                color={theme.primary}
+              />
+              <Text style={[styles.infoText, { color: theme.textSecondary }]}>
+                Default credentials: admin / admin123
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
       <Stack.Screen
@@ -80,6 +257,19 @@ export default function AdminDashboard() {
           headerStyle: { backgroundColor: theme.background },
           headerTintColor: theme.text,
           headerShadowVisible: false,
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={handleLogout}
+              style={{ marginRight: 16 }}
+            >
+              <IconSymbol
+                ios_icon_name="logout"
+                android_material_icon_name="logout"
+                size={24}
+                color={theme.error}
+              />
+            </TouchableOpacity>
+          ),
         }}
       />
 
@@ -165,11 +355,95 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+  },
   scrollView: {
     flex: 1,
   },
   content: {
     paddingHorizontal: 24,
+  },
+  loginContent: {
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    paddingBottom: 40,
+  },
+  loginCard: {
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  lockIcon: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  loginTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loginSubtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  loginForm: {
+    width: '100%',
+    gap: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: -8,
+  },
+  input: {
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    borderWidth: 1,
+  },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginTop: 8,
+    gap: 8,
+  },
+  loginButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 24,
+  },
+  infoText: {
+    fontSize: 13,
+    flex: 1,
   },
   header: {
     paddingTop: 8,

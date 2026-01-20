@@ -17,13 +17,12 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Stack } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { useTheme } from '@/contexts/WidgetContext';
+import { useTheme, useAdminAuth } from '@/contexts/WidgetContext';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 
-// TODO: Backend Integration - GET /api/admin/notifications to fetch notification templates
-// TODO: Backend Integration - POST /api/admin/notifications to create notification
-// TODO: Backend Integration - PUT /api/admin/notifications/:id to update notification
-// TODO: Backend Integration - DELETE /api/admin/notifications/:id to delete notification
+// Note: Notification endpoints are not yet implemented in the backend
+// These TODO comments will be addressed when the backend adds notification support
 
 interface NotificationTemplate {
   id: string;
@@ -39,6 +38,8 @@ interface NotificationTemplate {
 
 export default function NotificationsManager() {
   const { currentTheme: theme } = useTheme();
+  const { isAdmin, isLoading: authLoading } = useAdminAuth();
+  const router = useRouter();
   const [notifications, setNotifications] = useState<NotificationTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -55,12 +56,21 @@ export default function NotificationsManager() {
     loadNotifications();
   }, []);
 
+  // Redirect to admin login if not authenticated
+  React.useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      console.log('[NotificationsManager] Not authenticated, redirecting to admin login');
+      Alert.alert('Access Denied', 'Please login as admin to access this page');
+      router.replace('/admin/');
+    }
+  }, [authLoading, isAdmin]);
+
   const loadNotifications = async () => {
     console.log('[NotificationsManager] Loading notification templates');
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const data = await fetch('/api/admin/notifications').then(r => r.json());
+      // Note: Backend notification endpoints not yet implemented
+      // Using placeholder data for now
       const data: NotificationTemplate[] = [
         {
           id: '1',
@@ -117,8 +127,8 @@ export default function NotificationsManager() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     try {
-      // TODO: Replace with actual API call
-      Alert.alert('Success', `Notification ${editingNotification ? 'updated' : 'created'} successfully`);
+      // Note: Backend notification endpoints not yet implemented
+      Alert.alert('Coming Soon', 'Notification management will be available once backend endpoints are implemented');
       setModalVisible(false);
       loadNotifications();
     } catch (error) {
@@ -139,8 +149,8 @@ export default function NotificationsManager() {
           onPress: async () => {
             console.log('[NotificationsManager] Deleting notification:', notification.id);
             try {
-              // TODO: Replace with actual API call
-              Alert.alert('Success', 'Notification deleted successfully');
+              // Note: Backend notification endpoints not yet implemented
+              Alert.alert('Coming Soon', 'Notification management will be available once backend endpoints are implemented');
               loadNotifications();
             } catch (error) {
               console.error('[NotificationsManager] Failed to delete notification:', error);
@@ -152,7 +162,7 @@ export default function NotificationsManager() {
     );
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <Stack.Screen
@@ -168,6 +178,11 @@ export default function NotificationsManager() {
         </View>
       </SafeAreaView>
     );
+  }
+
+  // Don't render if not admin
+  if (!isAdmin) {
+    return null;
   }
 
   return (

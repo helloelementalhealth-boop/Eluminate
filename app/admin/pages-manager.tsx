@@ -17,13 +17,10 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Stack } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { useTheme } from '@/contexts/WidgetContext';
+import { useTheme, useAdminAuth } from '@/contexts/WidgetContext';
 import * as Haptics from 'expo-haptics';
-
-// TODO: Backend Integration - GET /api/admin/pages to fetch all pages
-// TODO: Backend Integration - GET /api/admin/pages/:pageType to fetch specific page
-// TODO: Backend Integration - PUT /api/admin/pages/:pageType to update page
-// TODO: Backend Integration - POST /api/admin/ai/generate-page-content to generate content with AI
+import { adminContentApi, adminAiApi } from '@/utils/adminApi';
+import { useRouter } from 'expo-router';
 
 interface AppPage {
   id: string;
@@ -36,6 +33,8 @@ interface AppPage {
 
 export default function PagesManager() {
   const { currentTheme: theme } = useTheme();
+  const { isAdmin, isLoading: authLoading } = useAdminAuth();
+  const router = useRouter();
   const [pages, setPages] = useState<AppPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -54,9 +53,70 @@ export default function PagesManager() {
     console.log('[PagesManager] Loading pages');
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const data = await fetch('/api/admin/pages').then(r => r.json());
-      const data: AppPage[] = [
+      // Fetch all content from backend
+      const allContent = await adminContentApi.getAllContent();
+      console.log('[PagesManager] Loaded content:', allContent);
+      
+      // Group content by page name and convert to AppPage format
+      const pageMap = new Map<string, AppPage>();
+      
+      allContent.forEach(content => {
+        const pageType = content.pageName.toLowerCase() as 'privacy' | 'terms' | 'help' | 'about';
+        
+        if (!pageMap.has(content.pageName)) {
+          pageMap.set(content.pageName, {
+            id: content.id,
+            pageType: pageType,
+            pageTitle: content.pageName.charAt(0).toUpperCase() + content.pageName.slice(1),
+            pageContent: '',
+            lastUpdated: content.updatedAt,
+          });
+        }
+        
+        const page = pageMap.get(content.pageName)!;
+        // Concatenate all content values for the page
+        if (content.contentType === 'text') {
+          page.pageContent += (page.pageContent ? '\n\n' : '') + content.contentValue;
+        }
+      });
+      
+      const pagesArray = Array.from(pageMap.values());
+      
+      // If no pages exist, create default pages
+      if (pagesArray.length === 0) {
+        console.log('[PagesManager] No pages found, creating defaults');
+        const defaultPages: AppPage[] = [
+          {
+            id: '1',
+            pageType: 'privacy',
+            pageTitle: 'Privacy Policy',
+            pageContent: 'Your privacy is important to us...',
+            lastUpdated: new Date().toISOString(),
+          },
+          {
+            id: '2',
+            pageType: 'terms',
+            pageTitle: 'Terms of Service',
+            pageContent: 'By using this app, you agree to...',
+            lastUpdated: new Date().toISOString(),
+          },
+          {
+            id: '3',
+            pageType: 'help',
+            pageTitle: 'Help & Support',
+            pageContent: 'Need help? Here are some common questions...',
+            lastUpdated: new Date().toISOString(),
+          },
+        ];
+        setPages(defaultPages);
+      } else {
+        setPages(pagesArray);
+      }
+    } catch (error) {
+      console.error('[PagesManager] Failed to load pages:', error);
+      Alert.alert('Error', 'Failed to load pages. Using default data.');
+      // Fallback to default pages on error
+      const defaultPages: AppPage[] = [
         {
           id: '1',
           pageType: 'privacy',
@@ -79,10 +139,7 @@ export default function PagesManager() {
           lastUpdated: new Date().toISOString(),
         },
       ];
-      setPages(data);
-    } catch (error) {
-      console.error('[PagesManager] Failed to load pages:', error);
-      Alert.alert('Error', 'Failed to load pages');
+      setPages(defaultPages);
     } finally {
       setLoading(false);
     }
@@ -103,17 +160,44 @@ export default function PagesManager() {
       return;
     }
 
-    console.log('[PagesManager] Saving page');
+    if (!editingPage) {
+      Alert.alert('Error', 'No page selected for editing');
+      return;
+    }
+
+    console.log('[PagesManager] Saving page:', editingPage.pageType);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     try {
-      // TODO: Replace with actual API call
+      // Check if content already exists for this page
+      const existingContent = await adminContentApi.getContentByPage(editingPage.pageType);
+      
+      if (existingContent.length > 0) {
+        // Update existing content
+        console.log('[PagesManager] Updating existing content:', existingContent[0].id);
+        await adminContentApi.updateContent(existingContent[0].id, {
+          contentValue: pageContent,
+          isActive: true,
+        });
+      } else {
+        // Create new content
+        console.log('[PagesManager] Creating new content for page:', editingPage.pageType);
+        await adminContentApi.createContent({
+          pageName: editingPage.pageType,
+          contentType: 'text',
+          contentKey: 'main_content',
+          contentValue: pageContent,
+          displayOrder: 0,
+          isActive: true,
+        });
+      }
+      
       Alert.alert('Success', 'Page updated successfully');
       setModalVisible(false);
       loadPages();
     } catch (error) {
       console.error('[PagesManager] Failed to save page:', error);
-      Alert.alert('Error', 'Failed to save page');
+      Alert.alert('Error', 'Failed to save page. Please try again.');
     }
   };
 
@@ -125,26 +209,26 @@ export default function PagesManager() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      // TODO: Replace with actual API call
-      // const result = await fetch('/api/admin/ai/generate-page-content', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ pageType: editingPage.pageType, appName: 'Hello Wellness' })
-      // }).then(r => r.json());
+      // Generate content using AI API
+      const prompt = `Generate a comprehensive ${editingPage.pageType} page for FlōWell, a wellness app that helps users track fitness, nutrition, mindfulness, and sleep.`;
+      const result = await adminAiApi.generateContent(prompt, 'text', `Page type: ${editingPage.pageType}`);
       
-      // Placeholder content
+      setPageContent(result.generatedContent);
+      Alert.alert('Success', 'Content generated by AI! Review and edit as needed.');
+    } catch (error) {
+      console.error('[PagesManager] Failed to generate content:', error);
+      Alert.alert('Error', 'Failed to generate content with AI. Using fallback content.');
+      
+      // Fallback to placeholder content if AI generation fails
       const placeholderContent = {
         privacy: 'Privacy Policy\n\nLast updated: [Date]\n\n1. Information We Collect\nWe collect information you provide directly to us, including when you create an account, use our services, or communicate with us.\n\n2. How We Use Your Information\nWe use the information we collect to provide, maintain, and improve our services, and to communicate with you.\n\n3. Information Sharing\nWe do not share your personal information with third parties except as described in this policy.\n\n4. Data Security\nWe implement appropriate security measures to protect your information.\n\n5. Your Rights\nYou have the right to access, update, or delete your personal information.\n\n6. Contact Us\nIf you have questions about this Privacy Policy, please contact us.',
         terms: 'Terms of Service\n\nLast updated: [Date]\n\n1. Acceptance of Terms\nBy accessing and using this app, you accept and agree to be bound by these Terms of Service.\n\n2. Use of Service\nYou agree to use the service only for lawful purposes and in accordance with these Terms.\n\n3. User Accounts\nYou are responsible for maintaining the confidentiality of your account credentials.\n\n4. Intellectual Property\nAll content and materials available through the service are protected by intellectual property rights.\n\n5. Limitation of Liability\nThe service is provided "as is" without warranties of any kind.\n\n6. Changes to Terms\nWe reserve the right to modify these terms at any time.\n\n7. Contact Information\nFor questions about these Terms, please contact us.',
         help: 'Help & Support\n\nWelcome to our Help Center! Find answers to common questions below.\n\n## Getting Started\n\nQ: How do I create an account?\nA: Tap the "Sign Up" button and follow the prompts to create your account.\n\nQ: How do I reset my password?\nA: Go to Settings > Account > Reset Password.\n\n## Using the App\n\nQ: How do I track my wellness activities?\nA: Navigate to the relevant section (Fitness, Nutrition, Mindfulness, or Sleep) and tap the "+" button to log an activity.\n\nQ: Can I customize my experience?\nA: Yes! Go to Settings > Theme to choose your preferred color theme.\n\n## Subscriptions\n\nQ: What features are included in the premium plan?\nA: Premium includes unlimited tracking, advanced analytics, personalized recommendations, and ad-free experience.\n\nQ: How do I cancel my subscription?\nA: Go to Settings > Subscription > Manage Subscription.\n\n## Contact Support\n\nStill need help? Contact us at support@hellowellness.app',
-        about: 'About Hello Wellness\n\nHello Wellness is your companion for holistic wellbeing, designed to support your journey toward balance and vitality.\n\nOur Mission\nWe believe wellness should be accessible, personalized, and rooted in real-life rhythms. Our app combines movement, nutrition, mindfulness, and rest into one seamless experience.\n\nWhat Makes Us Different\n- Holistic approach to wellness\n- AI-powered personalization\n- Beautiful, intuitive design\n- Non-clinical, supportive language\n- Community-driven features\n\nOur Team\nWe\'re a team of wellness enthusiasts, designers, and developers passionate about creating tools that truly support your wellbeing.\n\nVersion 1.0.0\n© 2026 Hello Wellness. All rights reserved.',
+        about: 'About FlōWell\n\nFlōWell is your companion for holistic wellbeing, designed to support your journey toward balance and vitality.\n\nOur Mission\nWe believe wellness should be accessible, personalized, and rooted in real-life rhythms. Our app combines movement, nutrition, mindfulness, and rest into one seamless experience.\n\nWhat Makes Us Different\n- Holistic approach to wellness\n- AI-powered personalization\n- Beautiful, intuitive design\n- Non-clinical, supportive language\n- Community-driven features\n\nOur Team\nWe\'re a team of wellness enthusiasts, designers, and developers passionate about creating tools that truly support your wellbeing.\n\nVersion 1.0.0\n© 2026 FlōWell. All rights reserved.',
       };
 
       const generatedContent = placeholderContent[editingPage.pageType] || pageContent;
       setPageContent(generatedContent);
-      Alert.alert('Success', 'Content generated by AI! Review and edit as needed.');
-    } catch (error) {
-      console.error('[PagesManager] Failed to generate content:', error);
-      Alert.alert('Error', 'Failed to generate content');
     } finally {
       setAiGenerating(false);
     }
@@ -160,7 +244,16 @@ export default function PagesManager() {
     }
   };
 
-  if (loading) {
+  // Redirect to admin login if not authenticated
+  React.useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      console.log('[PagesManager] Not authenticated, redirecting to admin login');
+      Alert.alert('Access Denied', 'Please login as admin to access this page');
+      router.replace('/admin/');
+    }
+  }, [authLoading, isAdmin]);
+
+  if (loading || authLoading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <Stack.Screen
@@ -176,6 +269,11 @@ export default function PagesManager() {
         </View>
       </SafeAreaView>
     );
+  }
+
+  // Don't render if not admin
+  if (!isAdmin) {
+    return null;
   }
 
   return (

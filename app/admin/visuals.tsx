@@ -13,13 +13,49 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { useTheme } from '@/contexts/WidgetContext';
+import { useTheme, useAdminAuth } from '@/contexts/WidgetContext';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { adminUploadApi } from '@/utils/adminApi';
+import { useRouter } from 'expo-router';
+import { ActivityIndicator } from 'react-native';
 
 export default function AdminVisuals() {
   const { currentTheme: theme } = useTheme();
+  const { isAdmin, isLoading: authLoading } = useAdminAuth();
+  const router = useRouter();
+
+  // Redirect to admin login if not authenticated
+  React.useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      console.log('[AdminVisuals] Not authenticated, redirecting to admin login');
+      Alert.alert('Access Denied', 'Please login as admin to access this page');
+      router.replace('/admin/');
+    }
+  }, [authLoading, isAdmin]);
+
+  if (authLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'Visual Content',
+            headerStyle: { backgroundColor: theme.background },
+            headerTintColor: theme.text,
+          }}
+        />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Don't render if not admin
+  if (!isAdmin) {
+    return null;
+  }
 
   const handlePickImage = async () => {
     console.log('[AdminVisuals] User tapped upload image');

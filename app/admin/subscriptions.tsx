@@ -17,12 +17,15 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Stack } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { useTheme } from '@/contexts/WidgetContext';
+import { useTheme, useAdminAuth } from '@/contexts/WidgetContext';
 import * as Haptics from 'expo-haptics';
 import { adminSubscriptionsApi, adminAiApi, SubscriptionPlan } from '@/utils/adminApi';
+import { useRouter } from 'expo-router';
 
 export default function AdminSubscriptions() {
   const { currentTheme: theme } = useTheme();
+  const { isAdmin, isLoading: authLoading } = useAdminAuth();
+  const router = useRouter();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -174,7 +177,16 @@ export default function AdminSubscriptions() {
     setFeatures(features.filter((_, i) => i !== index));
   };
 
-  if (loading) {
+  // Redirect to admin login if not authenticated
+  React.useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      console.log('[AdminSubscriptions] Not authenticated, redirecting to admin login');
+      Alert.alert('Access Denied', 'Please login as admin to access this page');
+      router.replace('/admin/');
+    }
+  }, [authLoading, isAdmin]);
+
+  if (loading || authLoading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <Stack.Screen
@@ -190,6 +202,11 @@ export default function AdminSubscriptions() {
         </View>
       </SafeAreaView>
     );
+  }
+
+  // Don't render if not admin
+  if (!isAdmin) {
+    return null;
   }
 
   return (

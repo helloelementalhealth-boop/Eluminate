@@ -3,6 +3,19 @@ import Constants from 'expo-constants';
 
 const BACKEND_URL = Constants.expoConfig?.extra?.backendUrl || '';
 
+console.log('[AdminAPI] Backend URL configured:', BACKEND_URL);
+
+// Type definitions
+export interface AdminAuthResponse {
+  success: boolean;
+  isAdmin: boolean;
+  token?: string;
+}
+
+export interface AdminCheckResponse {
+  isAdmin: boolean;
+}
+
 // Type definitions
 export interface AdminContent {
   id: string;
@@ -70,6 +83,30 @@ async function apiCall<T>(
     console.error('[AdminAPI] Request failed:', error);
     throw error;
   }
+}
+
+// Admin Authentication API
+export const adminAuthApi = {
+  async login(username: string, password: string): Promise<AdminAuthResponse> {
+    console.log('[AdminAuthAPI] Attempting login for username:', username);
+    return apiCall<AdminAuthResponse>('/api/admin/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+  },
+  async checkAuth(): Promise<AdminCheckResponse> {
+    console.log('[AdminAuthAPI] Checking admin authentication status');
+    return apiCall<AdminCheckResponse>('/api/admin/check', {
+      method: 'GET',
+    });
+  },
+  async logout(): Promise<{ success: boolean }> {
+    console.log('[AdminAuthAPI] Logging out admin user');
+    return apiCall<{ success: boolean }>('/api/admin/auth/logout', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  },
 }
 
 // Admin Content API

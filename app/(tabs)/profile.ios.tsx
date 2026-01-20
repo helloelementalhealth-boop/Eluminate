@@ -16,11 +16,12 @@ import { activityApi, goalsApi } from '@/utils/api';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
-import { useTheme } from '@/contexts/WidgetContext';
+import { useTheme, useAdminAuth } from '@/contexts/WidgetContext';
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const { currentTheme: theme } = useTheme();
+  const { isAdmin } = useAdminAuth();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [activities, setActivities] = useState<any>(null);
@@ -102,23 +103,23 @@ export default function ProfileScreen() {
           headerLargeTitle: true,
           headerStyle: { backgroundColor: theme.background },
           headerTintColor: theme.text,
-          headerRight: () => (
+          headerRight: isAdmin ? () => (
             <TouchableOpacity
               onPress={() => {
-                console.log('[ProfileScreen] User tapped Admin Control');
+                console.log('[ProfileScreen] Admin tapped Admin Control');
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 router.push('/admin/');
               }}
-              style={[styles.adminButton, { backgroundColor: theme.primary + '20' }]}
+              style={[styles.adminButton, { backgroundColor: theme.success + '20' }]}
             >
               <IconSymbol
                 ios_icon_name="settings"
                 android_material_icon_name="settings"
                 size={20}
-                color={theme.primary}
+                color={theme.success}
               />
             </TouchableOpacity>
-          ),
+          ) : undefined,
         }}
       />
 

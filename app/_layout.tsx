@@ -14,7 +14,7 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import { WidgetProvider, ThemeProvider as CustomThemeProvider } from "@/contexts/WidgetContext";
+import { WidgetProvider, ThemeProvider as CustomThemeProvider, AdminAuthProvider } from "@/contexts/WidgetContext";
 // Note: Error logging is auto-initialized via index.ts import
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -84,15 +84,17 @@ export default function RootLayout() {
           value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
         >
           <CustomThemeProvider>
-            <WidgetProvider>
-              <GestureHandlerRootView>
-              <Stack>
-                {/* Main app with tabs */}
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              </Stack>
-              <SystemBars style={"auto"} />
-              </GestureHandlerRootView>
-            </WidgetProvider>
+            <AdminAuthProvider>
+              <WidgetProvider>
+                <GestureHandlerRootView>
+                <Stack>
+                  {/* Main app with tabs */}
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                </Stack>
+                <SystemBars style={"auto"} />
+                </GestureHandlerRootView>
+              </WidgetProvider>
+            </AdminAuthProvider>
           </CustomThemeProvider>
         </ThemeProvider>
     </>
