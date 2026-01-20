@@ -6,12 +6,24 @@ export default function TabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="(home)">
-        <Label>Journal</Label>
-        <Icon sf={{ default: 'book', selected: 'book.fill' }} drawable="edit" />
+        <Label>Home</Label>
+        <Icon sf={{ default: 'house', selected: 'house.fill' }} drawable="home" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(history)">
-        <Label>History</Label>
-        <Icon sf={{ default: 'clock', selected: 'clock.fill' }} drawable="history" />
+      <NativeTabs.Trigger name="nutrition">
+        <Label>Nutrition</Label>
+        <Icon sf={{ default: 'fork.knife', selected: 'fork.knife.circle.fill' }} drawable="restaurant" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="fitness">
+        <Label>Fitness</Label>
+        <Icon sf={{ default: 'figure.walk', selected: 'figure.run' }} drawable="fitness-center" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="mindfulness">
+        <Label>Mindfulness</Label>
+        <Icon sf={{ default: 'brain.head.profile', selected: 'brain.head.profile.fill' }} drawable="self-improvement" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <Label>Profile</Label>
+        <Icon sf={{ default: 'person', selected: 'person.fill' }} drawable="person" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

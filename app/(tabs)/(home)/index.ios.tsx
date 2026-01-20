@@ -1,299 +1,282 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   ScrollView,
+  TouchableOpacity,
   useColorScheme,
-  KeyboardAvoidingView,
-  Alert,
-  ActivityIndicator,
+  RefreshControl,
+  Dimensions,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { colors } from '@/styles/commonStyles';
+import { dashboardApi } from '@/utils/api';
+import { IconSymbol } from '@/components/IconSymbol';
+import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
-import { colors, moodColors, commonStyles } from '@/styles/commonStyles';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
-import { journalApi } from '@/utils/api';
 
-type Mood = 'calm' | 'energized' | 'reflective' | 'restless' | 'grateful' | 'uncertain';
-
-const moods: { value: Mood; label: string; emoji: string }[] = [
-  { value: 'calm', label: 'Calm', emoji: '🌊' },
-  { value: 'energized', label: 'Energized', emoji: '⚡' },
-  { value: 'reflective', label: 'Reflective', emoji: '🌙' },
-  { value: 'restless', label: 'Restless', emoji: '🌪️' },
-  { value: 'grateful', label: 'Grateful', emoji: '🌸' },
-  { value: 'uncertain', label: 'Uncertain', emoji: '🌫️' },
-];
+const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
-  console.log('HomeScreen (iOS): Rendering journal screen');
-  const scheme = useColorScheme();
-  const theme = scheme === 'dark' ? colors.dark : colors.light;
+  const colorScheme = useColorScheme();
+  const theme = colors[colorScheme ?? 'light'];
+  const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
+  const [overview, setOverview] = useState<any>(null);
 
-  const [content, setContent] = useState('');
-  const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
-  const [energy, setEnergy] = useState<number>(3);
-  const [intention, setIntention] = useState('');
-  const [showIntention, setShowIntention] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const today = new Date().toISOString().split('T')[0];
 
-  const handleMoodSelect = (mood: Mood) => {
-    console.log('User selected mood:', mood);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedMood(mood);
-  };
-
-  const handleEnergySelect = (level: number) => {
-    console.log('User selected energy level:', level);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setEnergy(level);
-  };
-
-  const handleSave = async () => {
-    console.log('User tapped Save button', { content, selectedMood, energy, intention });
-    
-    if (!content.trim()) {
-      Alert.alert('Error', 'Please write something before saving');
-      return;
-    }
-
-    setIsSaving(true);
-    
+  const loadOverview = async () => {
+    console.log('[HomeScreen] Loading dashboard overview');
+    setRefreshing(true);
     try {
-      // Create journal entry via API
-      const entry = await journalApi.createEntry({
-        content: content.trim(),
-        mood: selectedMood || undefined,
-        energy,
-        intention: intention.trim() || undefined,
-      });
-
-      console.log('Journal entry created successfully:', entry);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-      // Show success message
-      Alert.alert('Success', 'Your journal entry has been saved', [
-        { text: 'OK', onPress: () => console.log('Success alert dismissed') }
-      ]);
-      
-      // Reset form
-      setContent('');
-      setSelectedMood(null);
-      setEnergy(3);
-      setIntention('');
-      setShowIntention(false);
+      const data = await dashboardApi.getOverview(today);
+      setOverview(data);
+      console.log('[HomeScreen] Overview loaded:', data);
     } catch (error) {
-      console.error('Failed to save journal entry:', error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      
-      Alert.alert(
-        'Error',
-        'Failed to save your journal entry. Please try again.',
-        [{ text: 'OK' }]
-      );
+      console.error('[HomeScreen] Failed to load overview:', error);
     } finally {
-      setIsSaving(false);
+      setRefreshing(false);
     }
   };
 
-  const canSave = content.trim().length > 0;
+  useEffect(() => {
+    loadOverview();
+  }, []);
+
+  const QuickStatCard = ({ 
+    icon, 
+    label, 
+    value, 
+    unit, 
+    color,
+    onPress 
+  }: { 
+    icon: string; 
+    label: string; 
+    value: string | number; 
+    unit?: string; 
+    color: string;
+    onPress?: () => void;
+  }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[styles.statCard, { backgroundColor: theme.card }]}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.iconCircle, { backgroundColor: color + '20' }]}>
+        <IconSymbol
+          ios_icon_name={icon}
+          android_material_icon_name={icon}
+          size={24}
+          color={color}
+        />
+      </View>
+      <Text style={[styles.statValue, { color: theme.text }]}>
+        {value}
+        {unit && <Text style={[styles.statUnit, { color: theme.textSecondary }]}> {unit}</Text>}
+      </Text>
+      <Text style={[styles.statLabel, { color: theme.textSecondary }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+
+  const SectionCard = ({
+    title,
+    icon,
+    children,
+    onPress,
+  }: {
+    title: string;
+    icon: string;
+    children: React.ReactNode;
+    onPress?: () => void;
+  }) => (
+    <Animated.View
+      entering={FadeInDown.duration(400)}
+      style={[styles.sectionCard, { backgroundColor: theme.card }]}
+    >
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleRow}>
+            <IconSymbol
+              ios_icon_name={icon}
+              android_material_icon_name={icon}
+              size={20}
+              color={theme.primary}
+            />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>{title}</Text>
+          </View>
+          <IconSymbol
+            ios_icon_name="chevron-right"
+            android_material_icon_name="chevron-right"
+            size={20}
+            color={theme.textSecondary}
+          />
+        </View>
+      </TouchableOpacity>
+      {children}
+    </Animated.View>
+  );
 
   return (
     <>
       <Stack.Screen
         options={{
-          headerShown: true,
-          headerLargeTitle: true,
-          headerTitle: 'Journal',
-          headerTransparent: false,
-          headerBlurEffect: scheme === 'dark' ? 'dark' : 'light',
-          headerStyle: {
-            backgroundColor: theme.background,
-          },
+          headerShown: false,
         }}
       />
-      <KeyboardAvoidingView 
-        behavior="padding"
-        style={[styles.container, { backgroundColor: theme.background }]}
-        keyboardVerticalOffset={0}
-      >
-        <ScrollView 
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.greeting, { color: theme.textSecondary }]}>
+              {new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening'}
+            </Text>
+            <Text style={[styles.title, { color: theme.text }]}>Your Wellness</Text>
+          </View>
+        </View>
+
+        <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={loadOverview} tintColor={theme.primary} />
+          }
         >
-          {/* Header */}
-          <Animated.View entering={FadeIn.duration(600)} style={styles.header}>
-            <Text style={[styles.greeting, { color: theme.text }]}>
-              How are you feeling?
-            </Text>
-            <Text style={[styles.subgreeting, { color: theme.textSecondary }]}>
-              Take a moment to reflect
-            </Text>
-          </Animated.View>
-
-          {/* Mood Selection */}
-          <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-              YOUR MOOD
-            </Text>
-            <View style={styles.moodGrid}>
-              {moods.map((mood, index) => (
-                <React.Fragment key={mood.value}>
-                  <TouchableOpacity
-                    onPress={() => handleMoodSelect(mood.value)}
-                    style={[
-                      styles.moodButton,
-                      { 
-                        backgroundColor: selectedMood === mood.value 
-                          ? moodColors[mood.value] 
-                          : theme.card,
-                        borderColor: selectedMood === mood.value 
-                          ? moodColors[mood.value]
-                          : theme.border,
-                      },
-                    ]}
-                  >
-                    <Text style={styles.moodEmoji}>{mood.emoji}</Text>
-                    <Text 
-                      style={[
-                        styles.moodLabel, 
-                        { 
-                          color: selectedMood === mood.value 
-                            ? '#FFFFFF' 
-                            : theme.text 
-                        }
-                      ]}
-                    >
-                      {mood.label}
-                    </Text>
-                  </TouchableOpacity>
-                </React.Fragment>
-              ))}
-            </View>
-          </Animated.View>
-
-          {/* Energy Level */}
-          <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-              ENERGY LEVEL
-            </Text>
-            <View style={styles.energyContainer}>
-              {[1, 2, 3, 4, 5].map((level, index) => (
-                <React.Fragment key={level}>
-                  <TouchableOpacity
-                    onPress={() => handleEnergySelect(level)}
-                    style={[
-                      styles.energyDot,
-                      {
-                        backgroundColor: level <= energy ? theme.primary : theme.card,
-                        borderColor: level <= energy ? theme.primary : theme.border,
-                        transform: [{ scale: level <= energy ? 1 : 0.85 }],
-                      },
-                    ]}
-                  />
-                </React.Fragment>
-              ))}
-            </View>
-            <View style={styles.energyLabels}>
-              <Text style={[styles.energyLabel, { color: theme.textSecondary }]}>Low</Text>
-              <Text style={[styles.energyLabel, { color: theme.textSecondary }]}>High</Text>
-            </View>
-          </Animated.View>
-
-          {/* Journal Entry */}
-          <Animated.View entering={FadeInDown.delay(300).duration(600)} style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-              YOUR THOUGHTS
-            </Text>
-            <TextInput
-              style={[
-                styles.textArea,
-                {
-                  backgroundColor: theme.card,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              placeholder="What's on your mind today?"
-              placeholderTextColor={theme.textSecondary}
-              multiline
-              numberOfLines={8}
-              value={content}
-              onChangeText={setContent}
-              textAlignVertical="top"
+          {/* Quick Stats Grid */}
+          <View style={styles.statsGrid}>
+            <QuickStatCard
+              icon="local-fire-department"
+              label="Calories"
+              value={overview?.nutrition?.total_calories || 0}
+              unit="kcal"
+              color={theme.warning}
+              onPress={() => router.push('/(tabs)/nutrition')}
             />
-          </Animated.View>
+            <QuickStatCard
+              icon="fitness-center"
+              label="Workouts"
+              value={overview?.workouts?.count || 0}
+              color={theme.error}
+              onPress={() => router.push('/(tabs)/fitness')}
+            />
+            <QuickStatCard
+              icon="self-improvement"
+              label="Meditation"
+              value={overview?.meditation?.total_minutes || 0}
+              unit="min"
+              color={theme.success}
+              onPress={() => router.push('/(tabs)/mindfulness')}
+            />
+            <QuickStatCard
+              icon="directions-walk"
+              label="Steps"
+              value={overview?.activities?.steps || 0}
+              color={theme.primary}
+              onPress={() => router.push('/(tabs)/profile')}
+            />
+          </View>
 
-          {/* Intention (Optional) */}
-          {!showIntention ? (
-            <Animated.View entering={FadeInDown.delay(400).duration(600)}>
-              <TouchableOpacity
-                onPress={() => {
-                  console.log('User tapped Add Intention button');
-                  setShowIntention(true);
-                }}
-                style={styles.addIntentionButton}
-              >
-                <Text style={[styles.addIntentionText, { color: theme.primary }]}>
-                  + Set an intention
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
-          ) : (
-            <Animated.View entering={FadeInDown.duration(400)} style={styles.section}>
-              <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-                TODAY'S INTENTION
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: theme.card,
-                    color: theme.text,
-                    borderColor: theme.border,
-                  },
-                ]}
-                placeholder="What do you want to focus on?"
-                placeholderTextColor={theme.textSecondary}
-                value={intention}
-                onChangeText={setIntention}
-              />
-            </Animated.View>
-          )}
-
-          {/* Save Button */}
-          <Animated.View entering={FadeInDown.delay(500).duration(600)} style={styles.saveContainer}>
+          {/* Journal Section */}
+          <SectionCard
+            title="Reflections"
+            icon="book"
+            onPress={() => router.push('/(tabs)/(history)/')}
+          >
             <TouchableOpacity
-              onPress={handleSave}
-              disabled={!canSave || isSaving}
-              style={[
-                styles.saveButton,
-                {
-                  backgroundColor: canSave && !isSaving ? theme.primary : theme.border,
-                  opacity: canSave && !isSaving ? 1 : 0.5,
-                },
-              ]}
+              style={[styles.actionButton, { backgroundColor: theme.primary }]}
+              onPress={() => router.push('/(tabs)/(home)/')}
+              activeOpacity={0.8}
             >
-              {isSaving ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.saveButtonText}>
-                  Save Entry
-                </Text>
-              )}
+              <IconSymbol
+                ios_icon_name="add"
+                android_material_icon_name="add"
+                size={20}
+                color="#FFFFFF"
+              />
+              <Text style={styles.actionButtonText}>New Entry</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </SectionCard>
 
-          {/* Bottom spacing */}
-          <View style={{ height: 40 }} />
+          {/* Today's Progress */}
+          <SectionCard title="Today's Progress" icon="trending-up">
+            <View style={styles.progressList}>
+              {overview?.goals_progress?.slice(0, 3).map((goal: any, index: number) => (
+                <View key={index} style={styles.progressItem}>
+                  <View style={styles.progressInfo}>
+                    <Text style={[styles.progressLabel, { color: theme.text }]}>
+                      {goal.goal_type.replace(/_/g, ' ')}
+                    </Text>
+                    <Text style={[styles.progressValue, { color: theme.textSecondary }]}>
+                      {goal.current} / {goal.target}
+                    </Text>
+                  </View>
+                  <View style={[styles.progressBar, { backgroundColor: theme.highlight }]}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        {
+                          width: `${Math.min(goal.percentage, 100)}%`,
+                          backgroundColor: goal.on_track ? theme.success : theme.warning,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </SectionCard>
+
+          {/* Quick Actions */}
+          <View style={styles.quickActions}>
+            <TouchableOpacity
+              style={[styles.quickActionCard, { backgroundColor: theme.card }]}
+              onPress={() => router.push('/(tabs)/nutrition')}
+              activeOpacity={0.7}
+            >
+              <IconSymbol
+                ios_icon_name="restaurant"
+                android_material_icon_name="restaurant"
+                size={28}
+                color={theme.primary}
+              />
+              <Text style={[styles.quickActionText, { color: theme.text }]}>Log Meal</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.quickActionCard, { backgroundColor: theme.card }]}
+              onPress={() => router.push('/(tabs)/fitness')}
+              activeOpacity={0.7}
+            >
+              <IconSymbol
+                ios_icon_name="fitness-center"
+                android_material_icon_name="fitness-center"
+                size={28}
+                color={theme.primary}
+              />
+              <Text style={[styles.quickActionText, { color: theme.text }]}>Start Workout</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.quickActionCard, { backgroundColor: theme.card }]}
+              onPress={() => router.push('/(tabs)/mindfulness')}
+              activeOpacity={0.7}
+            >
+              <IconSymbol
+                ios_icon_name="self-improvement"
+                android_material_icon_name="self-improvement"
+                size={28}
+                color={theme.primary}
+              />
+              <Text style={[styles.quickActionText, { color: theme.text }]}>Meditate</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ height: 100 }} />
         </ScrollView>
-      </KeyboardAvoidingView>
+      </View>
     </>
   );
 }
@@ -302,115 +285,145 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 20,
+  },
+  greeting: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+  content: {
+    paddingHorizontal: 24,
   },
-  header: {
-    marginBottom: 32,
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: '600',
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  subgreeting: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  section: {
-    marginBottom: 28,
-  },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  moodGrid: {
+  statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    marginBottom: 24,
+    gap: 12,
   },
-  moodButton: {
-    width: '31%',
-    aspectRatio: 1,
+  statCard: {
+    width: (width - 60) / 2,
+    padding: 16,
     borderRadius: 16,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  moodEmoji: {
-    fontSize: 32,
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
     marginBottom: 4,
   },
-  moodLabel: {
+  statUnit: {
+    fontSize: 16,
+    fontWeight: '400',
+  },
+  statLabel: {
     fontSize: 13,
-    fontWeight: '600',
   },
-  energyContainer: {
+  sectionCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  energyDot: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-  },
-  energyLabels: {
+  sectionTitleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-  },
-  energyLabel: {
-    fontSize: 12,
-  },
-  textArea: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
-    fontSize: 16,
-    lineHeight: 24,
-    minHeight: 160,
-  },
-  input: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 16,
-    fontSize: 16,
-  },
-  addIntentionButton: {
-    paddingVertical: 12,
     alignItems: 'center',
-    marginBottom: 28,
+    gap: 8,
   },
-  addIntentionText: {
-    fontSize: 15,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: '600',
   },
-  saveContainer: {
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  saveButton: {
-    borderRadius: 16,
-    paddingVertical: 18,
+  actionButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
   },
-  saveButtonText: {
+  actionButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
-    letterSpacing: 0.3,
+  },
+  progressList: {
+    gap: 16,
+  },
+  progressItem: {
+    gap: 8,
+  },
+  progressInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'capitalize',
+  },
+  progressValue: {
+    fontSize: 13,
+  },
+  progressBar: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  quickActionCard: {
+    flex: 1,
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    gap: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  quickActionText: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

@@ -1,44 +1,67 @@
 
 import { StyleSheet } from 'react-native';
 
-// Wellness-focused color palette with warm, calming tones
+// Muted, moody, natural color palette for wellness
 export const colors = {
-  // Light theme - warm, breathable
+  // Light theme - muted, natural tones
   light: {
-    background: '#FBF9F6',        // Warm off-white
-    card: '#FFFFFF',              // Pure white for cards
-    text: '#2C2C2E',              // Soft black
-    textSecondary: '#8E8E93',     // Muted gray
-    primary: '#D4A574',           // Warm terracotta
-    secondary: '#E8D5C4',         // Soft sand
-    accent: '#B8956A',            // Deep earth
-    highlight: '#F4E8DC',         // Gentle cream
-    border: '#E5E5EA',            // Subtle border
-    shadow: 'rgba(0, 0, 0, 0.08)',
+    background: '#E8E4DF',        // Muted warm gray
+    card: '#F5F3F0',              // Soft off-white
+    text: '#2A2826',              // Deep charcoal
+    textSecondary: '#6B6662',     // Muted brown-gray
+    primary: '#8B7355',           // Earthy brown
+    secondary: '#A89B8E',         // Warm stone
+    accent: '#6D5D4B',            // Deep earth
+    highlight: '#D4CEC7',         // Soft taupe
+    border: '#C9C3BC',            // Subtle border
+    shadow: 'rgba(0, 0, 0, 0.12)',
+    success: '#7A8B6F',           // Muted sage
+    warning: '#B89968',           // Warm ochre
+    error: '#A67B6B',             // Soft terracotta
   },
-  // Dark theme - deep, grounding
+  // Dark theme - deep, moody, grounding
   dark: {
-    background: '#1C1C1E',        // Deep charcoal
-    card: '#2C2C2E',              // Elevated surface
-    text: '#F2F2F7',              // Soft white
-    textSecondary: '#98989D',     // Muted gray
-    primary: '#D4A574',           // Warm terracotta (consistent)
-    secondary: '#4A4A4C',         // Deep gray
-    accent: '#E8C9A8',            // Light earth
-    highlight: '#3A3A3C',         // Subtle highlight
-    border: '#38383A',            // Subtle border
-    shadow: 'rgba(0, 0, 0, 0.3)',
+    background: '#1A1816',        // Deep charcoal-brown
+    card: '#252321',              // Elevated dark surface
+    text: '#E8E4DF',              // Soft warm white
+    textSecondary: '#8B8580',     // Muted gray
+    primary: '#A89B8E',           // Warm stone
+    secondary: '#3A3632',         // Deep gray-brown
+    accent: '#C4B5A6',            // Light earth
+    highlight: '#2F2D2A',         // Subtle highlight
+    border: '#3A3632',            // Subtle border
+    shadow: 'rgba(0, 0, 0, 0.4)',
+    success: '#8B9B7F',           // Muted sage
+    warning: '#C4A876',           // Warm ochre
+    error: '#B88B7B',             // Soft terracotta
   },
 };
 
-// Mood colors for journaling
+// Mood colors for journaling - muted and natural
 export const moodColors = {
-  calm: '#A8C5DD',        // Soft blue
-  energized: '#F4C95D',   // Warm yellow
-  reflective: '#B8A8D4',  // Gentle purple
-  restless: '#E89B9B',    // Soft coral
-  grateful: '#A8D4B8',    // Gentle green
-  uncertain: '#C4B5A8',   // Neutral beige
+  calm: '#7A8B9B',        // Muted blue-gray
+  energized: '#C4A876',   // Warm ochre
+  reflective: '#8B7A9B',  // Muted purple-gray
+  restless: '#B88B7B',    // Soft terracotta
+  grateful: '#8B9B7F',    // Muted sage
+  uncertain: '#9B8B7A',   // Neutral taupe
+};
+
+// Practice type colors for meditation
+export const practiceColors = {
+  breathwork: '#7A8B9B',
+  mindfulness: '#8B9B7F',
+  body_scan: '#9B8B7A',
+  loving_kindness: '#B88B7B',
+  gratitude: '#C4A876',
+};
+
+// Workout type colors
+export const workoutColors = {
+  strength: '#8B7355',
+  cardio: '#B88B7B',
+  flexibility: '#8B9B7F',
+  sports: '#7A8B9B',
 };
 
 export const commonStyles = StyleSheet.create({

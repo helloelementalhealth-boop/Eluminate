@@ -8,14 +8,32 @@ export default function TabLayout() {
     {
       name: '(home)',
       route: '/(tabs)/(home)/',
-      icon: 'edit',
-      label: 'Journal',
+      icon: 'home',
+      label: 'Home',
     },
     {
-      name: '(history)',
-      route: '/(tabs)/(history)/',
-      icon: 'book',
-      label: 'History',
+      name: 'nutrition',
+      route: '/(tabs)/nutrition',
+      icon: 'restaurant',
+      label: 'Nutrition',
+    },
+    {
+      name: 'fitness',
+      route: '/(tabs)/fitness',
+      icon: 'fitness-center',
+      label: 'Fitness',
+    },
+    {
+      name: 'mindfulness',
+      route: '/(tabs)/mindfulness',
+      icon: 'self-improvement',
+      label: 'Mindfulness',
+    },
+    {
+      name: 'profile',
+      route: '/(tabs)/profile',
+      icon: 'person',
+      label: 'Profile',
     },
   ];
 
@@ -29,6 +47,10 @@ export default function TabLayout() {
       >
         <Stack.Screen key="home" name="(home)" />
         <Stack.Screen key="history" name="(history)" />
+        <Stack.Screen key="nutrition" name="nutrition" />
+        <Stack.Screen key="fitness" name="fitness" />
+        <Stack.Screen key="mindfulness" name="mindfulness" />
+        <Stack.Screen key="profile" name="profile" />
       </Stack>
       <FloatingTabBar tabs={tabs} />
     </>
