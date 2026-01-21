@@ -11,16 +11,16 @@ export default function OpeningScreen() {
   const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
-    console.log('[OpeningScreen] Eluminate butterfly animation started');
+    console.log('[OpeningScreen] Eluminate animation started');
     
-    // Navigate to main app after animation completes (2.4 seconds total animation time)
+    // Navigate to main app after animation completes (4 seconds total animation time - slowed down from 2.4s)
     const timer = setTimeout(() => {
       if (!hasNavigated) {
         console.log('[OpeningScreen] Animation complete, navigating to home');
         setHasNavigated(true);
         router.replace('/(tabs)/(home)/');
       }
-    }, 2400);
+    }, 4000);
 
     return () => {
       clearTimeout(timer);

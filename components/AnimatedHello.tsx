@@ -28,28 +28,28 @@ export default function AnimatedHello({ color, secondaryColor }: AnimatedHelloPr
   useEffect(() => {
     console.log('AnimatedHello: Starting Eluminate winding pathway animation');
     
-    // Pathway draws in with smooth winding motion (1200ms)
-    pathOpacity.value = withTiming(1, { duration: 300 });
+    // Pathway draws in with smooth winding motion (2000ms - slowed down from 1200ms)
+    pathOpacity.value = withTiming(1, { duration: 500 });
     pathProgress.value = withTiming(1, { 
-      duration: 1200,
+      duration: 2000,
       easing: Easing.bezier(0.4, 0.0, 0.2, 1),
     });
 
-    // Text fades in as pathway completes (1200ms delay)
+    // Text fades in as pathway completes (2000ms delay - slowed down from 1200ms)
     textOpacity.value = withDelay(
-      1200,
-      withTiming(1, { duration: 600 })
+      2000,
+      withTiming(1, { duration: 800 })
     );
 
     textScale.value = withDelay(
-      1200,
+      2000,
       withSpring(1, { damping: 12, stiffness: 100 })
     );
 
-    // Subtitle appears last (1800ms delay)
+    // Subtitle appears last (3000ms delay - slowed down from 1800ms)
     subtitleOpacity.value = withDelay(
-      1800,
-      withTiming(1, { duration: 600 })
+      3000,
+      withTiming(1, { duration: 800 })
     );
   }, []);
 
@@ -92,7 +92,7 @@ export default function AnimatedHello({ color, secondaryColor }: AnimatedHelloPr
       </View>
 
       <Animated.Text style={[styles.subtitle, { color: secondaryColor }, subtitleStyle]}>
-        Illuminate your wellness journey
+        Begin with you.
       </Animated.Text>
     </View>
   );

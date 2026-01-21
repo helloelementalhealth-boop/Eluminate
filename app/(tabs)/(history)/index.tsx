@@ -119,7 +119,7 @@ export default function HistoryScreen() {
 
   const loadingText = 'Loading your journal...';
   const emptyTitle = 'Begin Your Reflection Journey';
-  const emptyMessage = 'Your journal is a sacred space for self-discovery. Start by creating your first entry and explore your inner landscape.';
+  const emptyMessage = 'Your Reflection Journal is a sacred space for mindfulness and self-discovery. Use it to explore your thoughts, feelings, and intentions. Start by creating your first entry and deepen your practice of presence.';
   const newEntryButtonText = 'New Entry';
 
   if (isLoading) {

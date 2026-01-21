@@ -6,6 +6,8 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
+  useColorScheme,
+  Platform,
   RefreshControl,
   Alert,
 } from 'react-native';
@@ -17,7 +19,6 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/contexts/WidgetContext';
-import { Stack } from 'expo-router';
 
 const moods: { [key: string]: { label: string; emoji: string } } = {
   calm: { label: 'Calm', emoji: '🌊' },
@@ -118,66 +119,90 @@ export default function HistoryScreen() {
 
   const loadingText = 'Loading your journal...';
   const emptyTitle = 'Begin Your Reflection Journey';
-  const emptyMessage = 'Your journal is a sacred space for self-discovery. Start by creating your first entry and explore your inner landscape.';
+  const emptyMessage = 'Your Reflection Journal is a sacred space for mindfulness and self-discovery. Use it to explore your thoughts, feelings, and intentions. Start by creating your first entry and deepen your practice of presence.';
   const newEntryButtonText = 'New Entry';
 
   if (isLoading) {
     return (
-      <>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'Reflection',
-            headerLargeTitle: true,
-            headerStyle: { backgroundColor: theme.background },
-            headerTintColor: theme.text,
-            headerShadowVisible: false,
-          }}
-        />
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['bottom']}>
-          <View style={styles.centerContainer}>
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              {loadingText}
-            </Text>
-          </View>
-        </SafeAreaView>
-      </>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+        <View style={styles.centerContainer}>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            {loadingText}
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (entries.length === 0) {
     return (
-      <>
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'Reflection',
-            headerLargeTitle: true,
-            headerStyle: { backgroundColor: theme.background },
-            headerTintColor: theme.text,
-            headerShadowVisible: false,
-          }}
-        />
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['bottom']}>
-          <View style={styles.centerContainer}>
-            <View style={[styles.emptyIcon, { backgroundColor: theme.primary + '20' }]}>
-              <IconSymbol
-                ios_icon_name="book"
-                android_material_icon_name="book"
-                size={48}
-                color={theme.primary}
-              />
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+        <View style={styles.centerContainer}>
+          <View style={[styles.emptyIcon, { backgroundColor: theme.primary + '20' }]}>
+            <IconSymbol
+              ios_icon_name="book"
+              android_material_icon_name="book"
+              size={48}
+              color={theme.primary}
+            />
+          </View>
+          <Text style={[styles.emptyTitle, { color: theme.text }]}>
+            {emptyTitle}
+          </Text>
+          <Text style={[styles.emptyMessage, { color: theme.textSecondary }]}>
+            {emptyMessage}
+          </Text>
+          <TouchableOpacity
+            style={[styles.newEntryButton, { backgroundColor: theme.primary }]}
+            onPress={() => {
+              console.log('[HistoryScreen] User tapped New Entry from empty state');
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('/(tabs)/(history)/new-entry');
+            }}
+            activeOpacity={0.8}
+          >
+            <IconSymbol
+              ios_icon_name="add"
+              android_material_icon_name="add"
+              size={20}
+              color="#FFFFFF"
+            />
+            <Text style={styles.newEntryButtonText}>{newEntryButtonText}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => loadEntries(true)}
+            tintColor={theme.primary}
+          />
+        }
+      >
+        {/* Header */}
+        <View style={[styles.header, Platform.OS === 'android' && { paddingTop: 48 }]}>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={[styles.title, { color: theme.text }]}>
+                Reflection
+              </Text>
+              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+                {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+              </Text>
             </View>
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>
-              {emptyTitle}
-            </Text>
-            <Text style={[styles.emptyMessage, { color: theme.textSecondary }]}>
-              {emptyMessage}
-            </Text>
             <TouchableOpacity
-              style={[styles.newEntryButton, { backgroundColor: theme.primary }]}
+              style={[styles.headerButton, { backgroundColor: theme.primary }]}
               onPress={() => {
-                console.log('[HistoryScreen] User tapped New Entry from empty state');
+                console.log('[HistoryScreen] User tapped New Entry');
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 router.push('/(tabs)/(history)/new-entry');
               }}
@@ -186,162 +211,115 @@ export default function HistoryScreen() {
               <IconSymbol
                 ios_icon_name="add"
                 android_material_icon_name="add"
-                size={20}
+                size={24}
                 color="#FFFFFF"
               />
-              <Text style={styles.newEntryButtonText}>{newEntryButtonText}</Text>
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
-      </>
-    );
-  }
+        </View>
 
-  return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: 'Reflection',
-          headerLargeTitle: true,
-          headerStyle: { backgroundColor: theme.background },
-          headerTintColor: theme.text,
-          headerShadowVisible: false,
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => {
-                console.log('[HistoryScreen] User tapped New Entry');
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push('/(tabs)/(history)/new-entry');
-              }}
-              style={{ marginRight: 16 }}
+        {/* Entries List */}
+        {entries.map((entry, index) => {
+          const isExpanded = expandedId === entry.id;
+          const mood = entry.mood ? moods[entry.mood] : null;
+
+          return (
+            <Animated.View
+              key={entry.id}
+              entering={FadeInDown.delay(index * 50).duration(400)}
+              style={styles.entryContainer}
             >
-              <IconSymbol
-                ios_icon_name="add"
-                android_material_icon_name="add"
-                size={28}
-                color={theme.primary}
-              />
-            </TouchableOpacity>
-          ),
-        }}
-      />
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['bottom']}>
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={() => loadEntries(true)}
-              tintColor={theme.primary}
-            />
-          }
-        >
-          {/* Entries List */}
-          {entries.map((entry, index) => {
-            const isExpanded = expandedId === entry.id;
-            const mood = entry.mood ? moods[entry.mood] : null;
-
-            return (
-              <Animated.View
-                key={entry.id}
-                entering={FadeInDown.delay(index * 50).duration(400)}
-                style={styles.entryContainer}
+              <TouchableOpacity
+                onPress={() => toggleExpand(entry.id)}
+                style={[
+                  styles.entryCard,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.border,
+                  },
+                ]}
               >
-                <TouchableOpacity
-                  onPress={() => toggleExpand(entry.id)}
-                  style={[
-                    styles.entryCard,
-                    {
-                      backgroundColor: theme.card,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                >
-                  {/* Entry Header */}
-                  <View style={styles.entryHeader}>
-                    <View style={styles.entryHeaderLeft}>
-                      {mood && (
-                        <View
-                          style={[
-                            styles.moodBadge,
-                            { backgroundColor: moodColors[entry.mood!] },
-                          ]}
-                        >
-                          <Text style={styles.moodEmoji}>{mood.emoji}</Text>
-                        </View>
-                      )}
-                      <View>
-                        <Text style={[styles.entryDate, { color: theme.text }]}>
-                          {formatDate(entry.createdAt)}
-                        </Text>
-                        {mood && (
-                          <Text style={[styles.moodLabel, { color: theme.textSecondary }]}>
-                            {mood.label}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                    {entry.energy && (
-                      <View style={styles.energyBadge}>
-                        <Text style={[styles.energyText, { color: theme.textSecondary }]}>
-                          Energy: {entry.energy}/5
-                        </Text>
+                {/* Entry Header */}
+                <View style={styles.entryHeader}>
+                  <View style={styles.entryHeaderLeft}>
+                    {mood && (
+                      <View
+                        style={[
+                          styles.moodBadge,
+                          { backgroundColor: moodColors[entry.mood!] },
+                        ]}
+                      >
+                        <Text style={styles.moodEmoji}>{mood.emoji}</Text>
                       </View>
                     )}
-                  </View>
-
-                  {/* Entry Content Preview */}
-                  <Text
-                    style={[styles.entryContent, { color: theme.text }]}
-                    numberOfLines={isExpanded ? undefined : 3}
-                  >
-                    {entry.content}
-                  </Text>
-
-                  {/* Intention */}
-                  {entry.intention && (
-                    <View style={[styles.intentionContainer, { backgroundColor: theme.background }]}>
-                      <Text style={[styles.intentionLabel, { color: theme.textSecondary }]}>
-                        Intention:
+                    <View>
+                      <Text style={[styles.entryDate, { color: theme.text }]}>
+                        {formatDate(entry.createdAt)}
                       </Text>
-                      <Text style={[styles.intentionText, { color: theme.text }]}>
-                        {entry.intention}
+                      {mood && (
+                        <Text style={[styles.moodLabel, { color: theme.textSecondary }]}>
+                          {mood.label}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  {entry.energy && (
+                    <View style={styles.energyBadge}>
+                      <Text style={[styles.energyText, { color: theme.textSecondary }]}>
+                        Energy: {entry.energy}/5
                       </Text>
                     </View>
                   )}
+                </View>
 
-                  {/* Expand/Collapse Indicator */}
-                  {entry.content.length > 150 && (
-                    <Text style={[styles.expandText, { color: theme.primary }]}>
-                      {isExpanded ? 'Show less' : 'Read more'}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-
-                {/* Delete Button */}
-                <TouchableOpacity
-                  onPress={() => handleDelete(entry.id)}
-                  style={[styles.deleteButton, { backgroundColor: theme.card }]}
+                {/* Entry Content Preview */}
+                <Text
+                  style={[styles.entryContent, { color: theme.text }]}
+                  numberOfLines={isExpanded ? undefined : 3}
                 >
-                  <IconSymbol
-                    ios_icon_name="delete"
-                    android_material_icon_name="delete"
-                    size={20}
-                    color={theme.error}
-                  />
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          })}
+                  {entry.content}
+                </Text>
 
-          {/* Bottom spacing for tab bar */}
-          <View style={{ height: 100 }} />
-        </ScrollView>
-      </SafeAreaView>
-    </>
+                {/* Intention */}
+                {entry.intention && (
+                  <View style={[styles.intentionContainer, { backgroundColor: theme.background }]}>
+                    <Text style={[styles.intentionLabel, { color: theme.textSecondary }]}>
+                      Intention:
+                    </Text>
+                    <Text style={[styles.intentionText, { color: theme.text }]}>
+                      {entry.intention}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Expand/Collapse Indicator */}
+                {entry.content.length > 150 && (
+                  <Text style={[styles.expandText, { color: theme.primary }]}>
+                    {isExpanded ? 'Show less' : 'Read more'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Delete Button */}
+              <TouchableOpacity
+                onPress={() => handleDelete(entry.id)}
+                style={[styles.deleteButton, { backgroundColor: theme.card }]}
+              >
+                <IconSymbol
+                  ios_icon_name="delete"
+                  android_material_icon_name="delete"
+                  size={20}
+                  color={theme.error}
+                />
+              </TouchableOpacity>
+            </Animated.View>
+          );
+        })}
+
+        {/* Bottom spacing for tab bar */}
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -368,7 +346,36 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+  },
+  header: {
+    paddingTop: 20,
+    marginBottom: 24,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '600',
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    lineHeight: 24,
   },
   emptyTitle: {
     fontSize: 24,
