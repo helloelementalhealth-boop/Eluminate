@@ -141,9 +141,37 @@ export default function MindfulnessScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={loadData} tintColor={theme.primary} />
         }
       >
-        {/* Journal Prompt Card */}
+        {/* Stats Card */}
         <Animated.View
           entering={FadeInDown.duration(300)}
+          style={[styles.statsCard, { backgroundColor: theme.card }]}
+        >
+          <Text style={[styles.statsTitle, { color: theme.text }]}>Your Practice</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: theme.primary }]}>
+                {todayMinutes}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Today (min)</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: theme.success }]}>
+                {stats?.total_minutes || 0}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total (min)</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: theme.warning }]}>
+                {stats?.current_streak || 0}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Day Streak</Text>
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Journal Prompt Card - Moved below stats */}
+        <Animated.View
+          entering={FadeInDown.delay(50).duration(300)}
           style={[styles.journalPromptCard, { backgroundColor: theme.primary + '15', borderColor: theme.primary + '30' }]}
         >
           <View style={styles.journalPromptContent}>
@@ -175,34 +203,6 @@ export default function MindfulnessScreen() {
           </View>
         </Animated.View>
 
-        {/* Stats Card */}
-        <Animated.View
-          entering={FadeInDown.delay(50).duration(300)}
-          style={[styles.statsCard, { backgroundColor: theme.card }]}
-        >
-          <Text style={[styles.statsTitle, { color: theme.text }]}>Your Practice</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.primary }]}>
-                {todayMinutes}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Today (min)</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.success }]}>
-                {stats?.total_minutes || 0}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total (min)</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: theme.warning }]}>
-                {stats?.current_streak || 0}
-              </Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Day Streak</Text>
-            </View>
-          </View>
-        </Animated.View>
-
         {/* Sessions List */}
         {sessions.length === 0 ? (
           <View style={styles.emptyState}>
@@ -223,7 +223,7 @@ export default function MindfulnessScreen() {
           sessions.map((session, index) => (
             <Animated.View
               key={session.id}
-              entering={FadeInDown.delay(index * 50).duration(300)}
+              entering={FadeInDown.delay((index + 2) * 50).duration(300)}
               style={[styles.sessionCard, { backgroundColor: theme.card }]}
             >
               <View style={styles.sessionHeader}>
@@ -417,10 +417,40 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 24,
   },
-  journalPromptCard: {
+  statsCard: {
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  journalPromptCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
     borderWidth: 1,
   },
   journalPromptContent: {
@@ -453,36 +483,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
-  },
-  statsCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  statsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    textAlign: 'center',
   },
   emptyState: {
     alignItems: 'center',
