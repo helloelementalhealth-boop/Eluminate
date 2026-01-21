@@ -95,7 +95,29 @@ export default function AnimatedHello({ color, secondaryColor }: AnimatedHelloPr
 
     // Subtitle appears after all letters (3640ms total)
     subtitleOpacity.value = withDelay(3640, withTiming(1, { duration: 600 }));
-  }, []);
+  }, [
+    pathProgress,
+    pathOpacity,
+    letterE,
+    letterL,
+    letterU,
+    letterM,
+    letterI,
+    letterN,
+    letterA,
+    letterT,
+    letterE2,
+    letterOpacityE,
+    letterOpacityL,
+    letterOpacityU,
+    letterOpacityM,
+    letterOpacityI,
+    letterOpacityN,
+    letterOpacityA,
+    letterOpacityT,
+    letterOpacityE2,
+    subtitleOpacity,
+  ]);
 
   // Pathway animated styles
   const pathStyle = useAnimatedStyle(() => ({
