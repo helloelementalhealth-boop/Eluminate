@@ -165,3 +165,16 @@ export const adminSubscriptionPlans = pgTable('admin_subscription_plans', {
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });
+
+// Sleep tools table
+export const sleepTools = pgTable('sleep_tools', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tool_type: text('tool_type').notNull(), // breathwork, body_scan, sleep_story, ambient_sounds, gratitude, wind_down
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  content: text('content').notNull(),
+  duration_minutes: integer('duration_minutes'),
+  is_premium: boolean('is_premium').default(false),
+  audio_url: text('audio_url'),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+});

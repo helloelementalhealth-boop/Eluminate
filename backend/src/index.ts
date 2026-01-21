@@ -18,6 +18,7 @@ import * as adminSubscriptionsRoutes from './routes/admin-subscriptions.js';
 import * as adminAiRoutes from './routes/admin-ai.js';
 import * as adminUploadRoutes from './routes/admin-upload.js';
 import * as adminAuthRoutes from './routes/admin-auth.js';
+import * as sleepToolsRoutes from './routes/sleep-tools.js';
 
 // Combine schemas
 const schema = { ...appSchema, ...authSchema };
@@ -49,6 +50,7 @@ adminSubscriptionsRoutes.register(app, app.fastify);
 adminAiRoutes.register(app, app.fastify);
 adminUploadRoutes.register(app, app.fastify);
 adminAuthRoutes.register(app, app.fastify);
+sleepToolsRoutes.register(app, app.fastify);
 
 await app.run();
 app.logger.info('Application running');
