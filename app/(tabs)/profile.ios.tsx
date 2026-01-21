@@ -251,45 +251,41 @@ export default function ProfileScreen() {
                 />
               </TouchableOpacity>
 
-              {isAdmin && (
-                <>
-                  <View style={[styles.divider, { backgroundColor: theme.border }]} />
-                  <TouchableOpacity
-                    style={styles.settingItem}
-                    onPress={() => {
-                      console.log('[ProfileScreen] User tapped Admin Control');
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push('/admin/');
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.settingLeft}>
-                      <View style={[styles.settingIcon, { backgroundColor: theme.error + '20' }]}>
-                        <IconSymbol
-                          ios_icon_name="settings"
-                          android_material_icon_name="settings"
-                          size={20}
-                          color={theme.error}
-                        />
-                      </View>
-                      <View style={styles.settingTextContainer}>
-                        <Text style={[styles.settingLabel, { color: theme.text }]}>
-                          {adminControlText}
-                        </Text>
-                        <Text style={[styles.settingDescription, { color: theme.textSecondary }]}>
-                          {adminDescriptionText}
-                        </Text>
-                      </View>
-                    </View>
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              <TouchableOpacity
+                style={styles.settingItem}
+                onPress={() => {
+                  console.log('[ProfileScreen] User tapped Login/Admin Control');
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/admin/');
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.settingLeft}>
+                  <View style={[styles.settingIcon, { backgroundColor: theme.error + '20' }]}>
                     <IconSymbol
-                      ios_icon_name="chevron-right"
-                      android_material_icon_name="chevron-right"
+                      ios_icon_name={isAdmin ? 'settings' : 'login'}
+                      android_material_icon_name={isAdmin ? 'settings' : 'login'}
                       size={20}
-                      color={theme.textSecondary}
+                      color={theme.error}
                     />
-                  </TouchableOpacity>
-                </>
-              )}
+                  </View>
+                  <View style={styles.settingTextContainer}>
+                    <Text style={[styles.settingLabel, { color: theme.text }]}>
+                      {isAdmin ? adminControlText : 'Login'}
+                    </Text>
+                    <Text style={[styles.settingDescription, { color: theme.textSecondary }]}>
+                      {isAdmin ? adminDescriptionText : 'Access admin features'}
+                    </Text>
+                  </View>
+                </View>
+                <IconSymbol
+                  ios_icon_name="chevron-right"
+                  android_material_icon_name="chevron-right"
+                  size={20}
+                  color={theme.textSecondary}
+                />
+              </TouchableOpacity>
             </View>
           </View>
 

@@ -160,7 +160,7 @@ export default function AdminDashboard() {
         <Stack.Screen
           options={{
             headerShown: true,
-            title: 'Admin Login',
+            title: 'Login',
             headerStyle: { backgroundColor: theme.background },
             headerTintColor: theme.text,
             headerShadowVisible: false,

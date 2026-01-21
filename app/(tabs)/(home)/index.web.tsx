@@ -309,16 +309,16 @@ export default function HomeScreen() {
               style={[styles.rhythmCard, { backgroundColor: theme.card }]}
               onPress={() => {
                 console.log('[HomeScreen] User tapped Nourishment');
-                router.push('/(tabs)/nutrition');
+                router.push('/(tabs)/nourishment');
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.rhythmIcon, { backgroundColor: theme.warning + '20' }]}>
+              <View style={[styles.rhythmIcon, { backgroundColor: theme.info + '20' }]}>
                 <IconSymbol
-                  ios_icon_name="restaurant"
-                  android_material_icon_name="restaurant"
+                  ios_icon_name="water-drop"
+                  android_material_icon_name="water-drop"
                   size={24}
-                  color={theme.warning}
+                  color={theme.info}
                 />
               </View>
               <Text style={[styles.rhythmLabel, { color: theme.text }]}>Nourishment</Text>
@@ -332,14 +332,14 @@ export default function HomeScreen() {
               style={[styles.rhythmCard, { backgroundColor: theme.card }]}
               onPress={() => {
                 console.log('[HomeScreen] User tapped Movement');
-                router.push('/(tabs)/fitness');
+                router.push('/(tabs)/movement');
               }}
               activeOpacity={0.7}
             >
               <View style={[styles.rhythmIcon, { backgroundColor: theme.error + '20' }]}>
                 <IconSymbol
-                  ios_icon_name="fitness-center"
-                  android_material_icon_name="fitness-center"
+                  ios_icon_name="autorenew"
+                  android_material_icon_name="autorenew"
                   size={24}
                   color={theme.error}
                 />
