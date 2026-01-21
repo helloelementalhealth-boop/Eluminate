@@ -32,7 +32,7 @@ export default function AdminVisuals() {
       Alert.alert('Access Denied', 'Please login as admin to access this page');
       router.replace('/admin/');
     }
-  }, [authLoading, isAdmin]);
+  }, [authLoading, isAdmin, router]);
 
   if (authLoading) {
     return (

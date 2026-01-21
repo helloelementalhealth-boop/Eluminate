@@ -41,13 +41,7 @@ export default function ContentEditor() {
                     pageName === 'privacy' ? 'Privacy Policy' :
                     pageName === 'help-support' ? 'Help & Support' : 'Content';
 
-  useEffect(() => {
-    if (pageName) {
-      loadContent();
-    }
-  }, [pageName]);
-
-  const loadContent = async () => {
+  const loadContent = React.useCallback(async () => {
     console.log('[ContentEditor] Loading content for:', pageName);
     setLoading(true);
     try {
@@ -59,7 +53,13 @@ export default function ContentEditor() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pageName]);
+
+  useEffect(() => {
+    if (pageName) {
+      loadContent();
+    }
+  }, [pageName, loadContent]);
 
   const handleAddContent = () => {
     console.log('[ContentEditor] User tapped Add Content');

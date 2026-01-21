@@ -34,7 +34,7 @@ export default function FitnessScreen() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const loadWorkouts = async () => {
+  const loadWorkouts = React.useCallback(async () => {
     console.log('[FitnessScreen] Loading workouts');
     setRefreshing(true);
     try {
@@ -46,11 +46,11 @@ export default function FitnessScreen() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [today]);
 
   useEffect(() => {
     loadWorkouts();
-  }, []);
+  }, [loadWorkouts]);
 
   const handleAddWorkout = async () => {
     if (!title || !duration) {

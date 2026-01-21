@@ -68,8 +68,41 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const availableThemes = Object.keys(colorThemes);
 
+  // Apply a theme from the backend
+  const applyBackendTheme = React.useCallback((backendTheme: VisualTheme) => {
+    const customTheme: ColorTheme = {
+      background: backendTheme.background_color,
+      card: backendTheme.card_color,
+      text: backendTheme.text_color,
+      textSecondary: backendTheme.text_secondary_color,
+      primary: backendTheme.primary_color,
+      secondary: backendTheme.secondary_color,
+      accent: backendTheme.accent_color,
+      highlight: backendTheme.card_color,
+      border: backendTheme.text_secondary_color + '40',
+      shadow: 'rgba(0, 0, 0, 0.12)',
+      success: '#7A8B6F',
+      warning: '#B89968',
+      error: '#A67B6B',
+    };
+    
+    setCurrentTheme(customTheme);
+    setThemeName(backendTheme.theme_name);
+  }, []);
+
+  // Update theme based on theme name
+  const updateTheme = React.useCallback((newThemeName: string) => {
+    const themeKey = newThemeName as keyof typeof colorThemes;
+    if (colorThemes[themeKey]) {
+      const scheme = systemColorScheme ?? 'light';
+      setCurrentTheme(colorThemes[themeKey][scheme]);
+      setThemeName(newThemeName);
+      console.log('[ThemeProvider] Theme updated to:', newThemeName, scheme);
+    }
+  }, [systemColorScheme]);
+
   // Load user preferences from backend
-  const loadPreferences = async () => {
+  const loadPreferences = useCallback(async () => {
     try {
       console.log('[ThemeProvider] Loading user preferences');
       const prefs = await preferencesApi.getPreferences();
@@ -89,40 +122,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       // Fall back to default theme
       updateTheme('warmEarth');
     }
-  };
-
-  // Apply a theme from the backend
-  const applyBackendTheme = (backendTheme: VisualTheme) => {
-    const customTheme: ColorTheme = {
-      background: backendTheme.background_color,
-      card: backendTheme.card_color,
-      text: backendTheme.text_color,
-      textSecondary: backendTheme.text_secondary_color,
-      primary: backendTheme.primary_color,
-      secondary: backendTheme.secondary_color,
-      accent: backendTheme.accent_color,
-      highlight: backendTheme.card_color,
-      border: backendTheme.text_secondary_color + '40',
-      shadow: 'rgba(0, 0, 0, 0.12)',
-      success: '#7A8B6F',
-      warning: '#B89968',
-      error: '#A67B6B',
-    };
-    
-    setCurrentTheme(customTheme);
-    setThemeName(backendTheme.theme_name);
-  };
-
-  // Update theme based on theme name
-  const updateTheme = (newThemeName: string) => {
-    const themeKey = newThemeName as keyof typeof colorThemes;
-    if (colorThemes[themeKey]) {
-      const scheme = systemColorScheme ?? 'light';
-      setCurrentTheme(colorThemes[themeKey][scheme]);
-      setThemeName(newThemeName);
-      console.log('[ThemeProvider] Theme updated to:', newThemeName, scheme);
-    }
-  };
+  }, [applyBackendTheme, updateTheme]);
 
   // Set theme and save to backend
   const setTheme = async (newThemeName: string) => {
@@ -192,7 +192,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Load preferences on mount
   useEffect(() => {
     loadPreferences();
-  }, []);
+  }, [loadPreferences]);
 
   // Update theme when system color scheme changes
   useEffect(() => {

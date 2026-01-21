@@ -139,13 +139,13 @@ export default function AdminCategories() {
   ];
 
   // Redirect to admin login if not authenticated
-  React.useEffect(() => {
+  useEffect(() => {
     if (!authLoading && !isAdmin) {
       console.log('[AdminCategories] Not authenticated, redirecting to admin login');
       Alert.alert('Access Denied', 'Please login as admin to access this page');
       router.replace('/admin/');
     }
-  }, [authLoading, isAdmin]);
+  }, [authLoading, isAdmin, router]);
 
   if (loading || authLoading) {
     return (

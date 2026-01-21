@@ -36,7 +36,7 @@ export default function HomeScreen() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const loadOverview = async () => {
+  const loadOverview = React.useCallback(async () => {
     console.log('[HomeScreen] Loading dashboard overview');
     setRefreshing(true);
     try {
@@ -48,9 +48,9 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [today]);
 
-  const loadWeeklyQuote = async () => {
+  const loadWeeklyQuote = React.useCallback(async () => {
     console.log('[HomeScreen] Loading weekly quote');
     try {
       const quote = await quotesApi.getCurrentQuote();
@@ -66,9 +66,9 @@ export default function HomeScreen() {
         created_at: new Date().toISOString(),
       });
     }
-  };
+  }, []);
 
-  const loadMovementVisuals = async () => {
+  const loadMovementVisuals = React.useCallback(async () => {
     console.log('[HomeScreen] Loading movement visuals for current month');
     try {
       const visuals = await visualsApi.getRhythmVisualsByCategory('movement');
@@ -159,7 +159,7 @@ export default function HomeScreen() {
         },
       ]);
     }
-  };
+  }, []);
 
   const handleRegenerateQuote = async () => {
     console.log('[HomeScreen] User tapped regenerate quote');
@@ -180,7 +180,7 @@ export default function HomeScreen() {
     loadOverview();
     loadWeeklyQuote();
     loadMovementVisuals();
-  }, []);
+  }, [loadOverview, loadWeeklyQuote, loadMovementVisuals]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>

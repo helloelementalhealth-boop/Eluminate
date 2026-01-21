@@ -25,19 +25,39 @@ const acronym = [
 
 export default function AnimatedHello({ color, secondaryColor }: AnimatedHelloProps) {
   // Create all animated values at the component level (not in callbacks)
-  const letterAnimations = useMemo(
-    () => acronym.map(() => ({ opacity: useSharedValue(0), scale: useSharedValue(0) })),
-    []
-  );
-  const wordAnimations = useMemo(
-    () => acronym.map(() => ({ opacity: useSharedValue(0), translateX: useSharedValue(-20) })),
-    []
-  );
+  const letterOpacity0 = useSharedValue(0);
+  const letterOpacity1 = useSharedValue(0);
+  const letterOpacity2 = useSharedValue(0);
+  const letterOpacity3 = useSharedValue(0);
+  const letterOpacity4 = useSharedValue(0);
+
+  const letterScale0 = useSharedValue(0);
+  const letterScale1 = useSharedValue(0);
+  const letterScale2 = useSharedValue(0);
+  const letterScale3 = useSharedValue(0);
+  const letterScale4 = useSharedValue(0);
+
+  const wordOpacity0 = useSharedValue(0);
+  const wordOpacity1 = useSharedValue(0);
+  const wordOpacity2 = useSharedValue(0);
+  const wordOpacity3 = useSharedValue(0);
+  const wordOpacity4 = useSharedValue(0);
+
+  const wordTranslateX0 = useSharedValue(-20);
+  const wordTranslateX1 = useSharedValue(-20);
+  const wordTranslateX2 = useSharedValue(-20);
+  const wordTranslateX3 = useSharedValue(-20);
+  const wordTranslateX4 = useSharedValue(-20);
+
+  const letterOpacities = [letterOpacity0, letterOpacity1, letterOpacity2, letterOpacity3, letterOpacity4];
+  const letterScales = [letterScale0, letterScale1, letterScale2, letterScale3, letterScale4];
+  const wordOpacities = [wordOpacity0, wordOpacity1, wordOpacity2, wordOpacity3, wordOpacity4];
+  const wordTranslateXs = [wordTranslateX0, wordTranslateX1, wordTranslateX2, wordTranslateX3, wordTranslateX4];
 
   useEffect(() => {
     // Animate letters first
-    letterAnimations.forEach((anim, index) => {
-      anim.opacity.value = withDelay(
+    letterOpacities.forEach((opacity, index) => {
+      opacity.value = withDelay(
         index * 150,
         withSequence(
           withSpring(1, {
@@ -47,7 +67,10 @@ export default function AnimatedHello({ color, secondaryColor }: AnimatedHelloPr
           withSpring(1, { damping: 8 })
         )
       );
-      anim.scale.value = withDelay(
+    });
+
+    letterScales.forEach((scale, index) => {
+      scale.value = withDelay(
         index * 150,
         withSequence(
           withSpring(1, {
@@ -61,48 +84,103 @@ export default function AnimatedHello({ color, secondaryColor }: AnimatedHelloPr
     });
 
     // Then animate words
-    wordAnimations.forEach((anim, index) => {
-      anim.opacity.value = withDelay(
+    wordOpacities.forEach((opacity, index) => {
+      opacity.value = withDelay(
         index * 150 + 300,
         withTiming(1, { duration: 600 })
       );
-      anim.translateX.value = withDelay(
+    });
+
+    wordTranslateXs.forEach((translateX, index) => {
+      translateX.value = withDelay(
         index * 150 + 300,
         withTiming(0, { duration: 600 })
       );
     });
-  }, [letterAnimations, wordAnimations]);
+  }, []);
+
+  // Create animated styles at component level
+  const letterStyle0 = useAnimatedStyle(() => ({
+    opacity: letterOpacity0.value,
+    transform: [
+      { scale: letterScale0.value },
+      { translateY: (1 - letterOpacity0.value) * 20 },
+    ],
+  }));
+
+  const letterStyle1 = useAnimatedStyle(() => ({
+    opacity: letterOpacity1.value,
+    transform: [
+      { scale: letterScale1.value },
+      { translateY: (1 - letterOpacity1.value) * 20 },
+    ],
+  }));
+
+  const letterStyle2 = useAnimatedStyle(() => ({
+    opacity: letterOpacity2.value,
+    transform: [
+      { scale: letterScale2.value },
+      { translateY: (1 - letterOpacity2.value) * 20 },
+    ],
+  }));
+
+  const letterStyle3 = useAnimatedStyle(() => ({
+    opacity: letterOpacity3.value,
+    transform: [
+      { scale: letterScale3.value },
+      { translateY: (1 - letterOpacity3.value) * 20 },
+    ],
+  }));
+
+  const letterStyle4 = useAnimatedStyle(() => ({
+    opacity: letterOpacity4.value,
+    transform: [
+      { scale: letterScale4.value },
+      { translateY: (1 - letterOpacity4.value) * 20 },
+    ],
+  }));
+
+  const wordStyle0 = useAnimatedStyle(() => ({
+    opacity: wordOpacity0.value,
+    transform: [{ translateX: wordTranslateX0.value }],
+  }));
+
+  const wordStyle1 = useAnimatedStyle(() => ({
+    opacity: wordOpacity1.value,
+    transform: [{ translateX: wordTranslateX1.value }],
+  }));
+
+  const wordStyle2 = useAnimatedStyle(() => ({
+    opacity: wordOpacity2.value,
+    transform: [{ translateX: wordTranslateX2.value }],
+  }));
+
+  const wordStyle3 = useAnimatedStyle(() => ({
+    opacity: wordOpacity3.value,
+    transform: [{ translateX: wordTranslateX3.value }],
+  }));
+
+  const wordStyle4 = useAnimatedStyle(() => ({
+    opacity: wordOpacity4.value,
+    transform: [{ translateX: wordTranslateX4.value }],
+  }));
+
+  const letterStyles = [letterStyle0, letterStyle1, letterStyle2, letterStyle3, letterStyle4];
+  const wordStyles = [wordStyle0, wordStyle1, wordStyle2, wordStyle3, wordStyle4];
 
   return (
     <View style={styles.container}>
       <View style={styles.helloContainer}>
-        {acronym.map((item, index) => {
-          const letterStyle = useAnimatedStyle(() => ({
-            opacity: letterAnimations[index].opacity.value,
-            transform: [
-              { scale: letterAnimations[index].scale.value },
-              { translateY: (1 - letterAnimations[index].opacity.value) * 20 },
-            ],
-          }));
-
-          const wordStyle = useAnimatedStyle(() => ({
-            opacity: wordAnimations[index].opacity.value,
-            transform: [
-              { translateX: wordAnimations[index].translateX.value },
-            ],
-          }));
-
-          return (
-            <View key={index} style={styles.row}>
-              <Animated.Text style={[styles.letter, { color }, letterStyle]}>
-                {item.letter}
-              </Animated.Text>
-              <Animated.Text style={[styles.word, { color: secondaryColor }, wordStyle]}>
-                {item.word}
-              </Animated.Text>
-            </View>
-          );
-        })}
+        {acronym.map((item, index) => (
+          <View key={index} style={styles.row}>
+            <Animated.Text style={[styles.letter, { color }, letterStyles[index]]}>
+              {item.letter}
+            </Animated.Text>
+            <Animated.Text style={[styles.word, { color: secondaryColor }, wordStyles[index]]}>
+              {item.word}
+            </Animated.Text>
+          </View>
+        ))}
       </View>
       <Text style={[styles.subtitle, { color: secondaryColor }]}>
         Begin your wellness journey

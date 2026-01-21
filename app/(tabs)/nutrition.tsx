@@ -36,7 +36,7 @@ export default function NutritionScreen() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const loadData = async () => {
+  const loadData = React.useCallback(async () => {
     console.log('[NutritionScreen] Loading nutrition data');
     setRefreshing(true);
     try {
@@ -52,11 +52,11 @@ export default function NutritionScreen() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [today]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   const handleAddMeal = async () => {
     if (!foodName || !calories) {

@@ -35,7 +35,7 @@ export default function MindfulnessScreen() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const loadData = async () => {
+  const loadData = React.useCallback(async () => {
     console.log('[MindfulnessScreen] Loading meditation data');
     setRefreshing(true);
     try {
@@ -51,11 +51,11 @@ export default function MindfulnessScreen() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [today]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   const handleAddSession = async () => {
     if (!duration) {

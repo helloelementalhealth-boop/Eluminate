@@ -31,7 +31,7 @@ export default function ProfileScreen() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const loadData = async () => {
+  const loadData = React.useCallback(async () => {
     console.log('[ProfileScreen] Loading profile data');
     setRefreshing(true);
     try {
@@ -47,11 +47,11 @@ export default function ProfileScreen() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [today]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   const handleUpgrade = () => {
     Alert.alert(
