@@ -8,20 +8,24 @@ import { useTheme } from '@/contexts/WidgetContext';
 export default function OpeningScreen() {
   const router = useRouter();
   const { currentTheme: theme } = useTheme();
-  const [animationComplete, setAnimationComplete] = useState(false);
+  const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
     console.log('[OpeningScreen] Eluminate butterfly animation started');
     
     // Navigate to main app after animation completes (2.4 seconds total animation time)
     const timer = setTimeout(() => {
-      console.log('[OpeningScreen] Animation complete, navigating to home');
-      setAnimationComplete(true);
-      router.replace('/(tabs)/(home)/');
+      if (!hasNavigated) {
+        console.log('[OpeningScreen] Animation complete, navigating to home');
+        setHasNavigated(true);
+        router.replace('/(tabs)/(home)/');
+      }
     }, 2400);
 
-    return () => clearTimeout(timer);
-  }, [router]);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [router, hasNavigated]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
