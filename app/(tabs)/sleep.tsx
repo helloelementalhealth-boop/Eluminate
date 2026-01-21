@@ -8,11 +8,11 @@ import {
   TouchableOpacity,
   useColorScheme,
   RefreshControl,
-  TextInput,
   Alert,
   Modal,
   Platform,
   ImageBackground,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -21,115 +21,114 @@ import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/WidgetContext';
-
-type SleepTool = 'breathwork' | 'body_scan' | 'sleep_story' | 'ambient_sounds' | 'gratitude' | 'wind_down';
-
-interface SleepSession {
-  id: string;
-  tool: SleepTool;
-  duration: number;
-  date: string;
-}
-
-const sleepTools = [
-  {
-    id: 'breathwork' as SleepTool,
-    name: 'Sleep Breathwork',
-    description: '4-7-8 breathing to calm your nervous system',
-    icon: 'air',
-    color: '#7A8B9B',
-    image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80',
-  },
-  {
-    id: 'body_scan' as SleepTool,
-    name: 'Body Scan',
-    description: 'Progressive relaxation from head to toe',
-    icon: 'self-improvement',
-    color: '#8B7A9B',
-    image: 'https://images.unsplash.com/photo-1545389336-cf090694435e?w=800&q=80',
-  },
-  {
-    id: 'sleep_story' as SleepTool,
-    name: 'Sleep Stories',
-    description: 'Calming narratives to ease you into rest',
-    icon: 'menu-book',
-    color: '#8B9B7F',
-    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80',
-  },
-  {
-    id: 'ambient_sounds' as SleepTool,
-    name: 'Ambient Sounds',
-    description: 'Rain, ocean waves, and nature soundscapes',
-    icon: 'music-note',
-    color: '#9B8B7A',
-    image: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=800&q=80',
-  },
-  {
-    id: 'gratitude' as SleepTool,
-    name: 'Evening Gratitude',
-    description: 'Reflect on three things from your day',
-    icon: 'favorite',
-    color: '#C4A876',
-    image: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&q=80',
-  },
-  {
-    id: 'wind_down' as SleepTool,
-    name: 'Wind Down Routine',
-    description: 'Gentle stretches and movements for rest',
-    icon: 'nightlight',
-    color: '#B88B7B',
-    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80',
-  },
-];
+import { sleepApi, SleepTool } from '@/utils/api';
+import { useRouter } from 'expo-router';
 
 export default function SleepScreen() {
   const colorScheme = useColorScheme();
   const { currentTheme: theme } = useTheme();
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
-  const [sessions, setSessions] = useState<SleepSession[]>([]);
+  const [tools, setTools] = useState<SleepTool[]>([]);
+  const [selectedTool, setSelectedTool] = useState<SleepTool | null>(null);
+  const [toolContent, setToolContent] = useState<string>('');
+  const [loadingContent, setLoadingContent] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedTool, setSelectedTool] = useState<SleepTool>('breathwork');
-  const [duration, setDuration] = useState('10');
 
-  const today = new Date().toISOString().split('T')[0];
-
-  const loadSessions = async () => {
-    console.log('[SleepScreen] Loading sleep sessions');
+  const loadTools = async () => {
+    console.log('[SleepScreen] Loading sleep tools');
     setRefreshing(true);
-    // TODO: Backend Integration - GET /api/sleep/sessions?date=${today} → [{ id, tool, duration, date }]
-    // For now, using mock data
-    setSessions([]);
-    setRefreshing(false);
+    try {
+      const data = await sleepApi.getTools();
+      setTools(data);
+      console.log('[SleepScreen] Sleep tools loaded:', data.length, 'tools');
+    } catch (error) {
+      console.error('[SleepScreen] Failed to load sleep tools:', error);
+      setTools([]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
-    loadSessions();
+    loadTools();
   }, []);
 
-  const handleStartTool = (tool: SleepTool) => {
-    console.log('[SleepScreen] User started tool:', tool);
+  const handleToolPress = async (tool: SleepTool) => {
+    console.log('[SleepScreen] User tapped tool:', tool.title, 'Premium:', tool.is_premium);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSelectedTool(tool);
-    setModalVisible(true);
-  };
 
-  const handleLogSession = async () => {
-    if (!duration || parseInt(duration) <= 0) {
-      Alert.alert('Invalid Duration', 'Please enter a valid duration');
+    if (tool.is_premium) {
+      Alert.alert(
+        'Premium Feature',
+        `${tool.title} is a premium feature. Upgrade to access advanced sleep tools and guided content.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Upgrade',
+            onPress: () => {
+              console.log('[SleepScreen] User tapped Upgrade');
+              router.push('/(tabs)/profile');
+            },
+          },
+        ]
+      );
       return;
     }
 
-    console.log('[SleepScreen] Logging session:', { tool: selectedTool, duration });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
-    // TODO: Backend Integration - POST /api/sleep/sessions with { tool, duration, date }
-    
-    setModalVisible(false);
-    setDuration('10');
-    loadSessions();
+    setSelectedTool(tool);
+    setLoadingContent(true);
+    setModalVisible(true);
+
+    try {
+      const fullTool = await sleepApi.getTool(tool.id);
+      setToolContent(fullTool.content || 'Content not available');
+      console.log('[SleepScreen] Tool content loaded');
+    } catch (error) {
+      console.error('[SleepScreen] Failed to load tool content:', error);
+      setToolContent('Unable to load content. Please try again.');
+    } finally {
+      setLoadingContent(false);
+    }
   };
 
-  const totalMinutes = sessions.reduce((sum, s) => sum + s.duration, 0);
+  const getToolIcon = (toolType: string): string => {
+    const iconMap: Record<string, string> = {
+      breathwork: 'air',
+      body_scan: 'self-improvement',
+      sleep_story: 'menu-book',
+      ambient_sounds: 'music-note',
+      gratitude: 'favorite',
+      wind_down: 'nightlight',
+    };
+    return iconMap[toolType] || 'bedtime';
+  };
+
+  const getToolColor = (toolType: string): string => {
+    const colorMap: Record<string, string> = {
+      breathwork: '#7A8B9B',
+      body_scan: '#8B7A9B',
+      sleep_story: '#8B9B7F',
+      ambient_sounds: '#9B8B7A',
+      gratitude: '#C4A876',
+      wind_down: '#B88B7B',
+    };
+    return colorMap[toolType] || theme.primary;
+  };
+
+  const getToolImage = (toolType: string): string => {
+    const imageMap: Record<string, string> = {
+      breathwork: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80',
+      body_scan: 'https://images.unsplash.com/photo-1545389336-cf090694435e?w=800&q=80',
+      sleep_story: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80',
+      ambient_sounds: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=800&q=80',
+      gratitude: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&q=80',
+      wind_down: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80',
+    };
+    return imageMap[toolType] || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80';
+  };
+
+  const durationText = selectedTool ? `${selectedTool.duration_minutes} min` : '';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
@@ -147,30 +146,9 @@ export default function SleepScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={loadSessions} tintColor={theme.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={loadTools} tintColor={theme.primary} />
         }
       >
-        {/* Evening Summary */}
-        <Animated.View
-          entering={FadeInDown.duration(300)}
-          style={[styles.summaryCard, { backgroundColor: theme.card }]}
-        >
-          <View style={styles.summaryHeader}>
-            <IconSymbol
-              ios_icon_name="bedtime"
-              android_material_icon_name="bedtime"
-              size={32}
-              color={theme.primary}
-            />
-            <View style={styles.summaryText}>
-              <Text style={[styles.summaryTitle, { color: theme.text }]}>Tonight&apos;s Practice</Text>
-              <Text style={[styles.summaryValue, { color: theme.textSecondary }]}>
-                {totalMinutes} minutes of rest
-              </Text>
-            </View>
-          </View>
-        </Animated.View>
-
         {/* Sleep Tools Grid */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Evening Tools</Text>
@@ -179,41 +157,69 @@ export default function SleepScreen() {
           </Text>
 
           <View style={styles.toolsGrid}>
-            {sleepTools.map((tool, index) => (
-              <Animated.View
-                key={tool.id}
-                entering={FadeInDown.delay(index * 80).duration(400)}
-                style={styles.toolCardContainer}
-              >
-                <TouchableOpacity
-                  style={[styles.toolCard, { backgroundColor: theme.card }]}
-                  onPress={() => handleStartTool(tool.id)}
-                  activeOpacity={0.8}
+            {tools.map((tool, index) => {
+              const toolIcon = getToolIcon(tool.tool_type);
+              const toolColor = getToolColor(tool.tool_type);
+              const toolImage = getToolImage(tool.tool_type);
+
+              return (
+                <Animated.View
+                  key={tool.id}
+                  entering={FadeInDown.delay(index * 80).duration(400)}
+                  style={styles.toolCardContainer}
                 >
-                  <ImageBackground
-                    source={{ uri: tool.image }}
-                    style={styles.toolImage}
-                    imageStyle={styles.toolImageStyle}
+                  <TouchableOpacity
+                    style={[styles.toolCard, { backgroundColor: theme.card }]}
+                    onPress={() => handleToolPress(tool)}
+                    activeOpacity={0.8}
                   >
-                    <LinearGradient
-                      colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.8)']}
-                      style={styles.toolGradient}
+                    <ImageBackground
+                      source={{ uri: toolImage }}
+                      style={styles.toolImage}
+                      imageStyle={styles.toolImageStyle}
                     >
-                      <View style={[styles.toolIconContainer, { backgroundColor: tool.color + '30' }]}>
-                        <IconSymbol
-                          ios_icon_name={tool.icon}
-                          android_material_icon_name={tool.icon}
-                          size={24}
-                          color="#FFFFFF"
-                        />
-                      </View>
-                      <Text style={styles.toolName}>{tool.name}</Text>
-                      <Text style={styles.toolDescription}>{tool.description}</Text>
-                    </LinearGradient>
-                  </ImageBackground>
-                </TouchableOpacity>
-              </Animated.View>
-            ))}
+                      <LinearGradient
+                        colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.8)']}
+                        style={styles.toolGradient}
+                      >
+                        {tool.is_premium && (
+                          <View style={styles.premiumBadge}>
+                            <IconSymbol
+                              ios_icon_name="star"
+                              android_material_icon_name="star"
+                              size={12}
+                              color="#FFD700"
+                            />
+                            <Text style={styles.premiumText}>Premium</Text>
+                          </View>
+                        )}
+                        <View style={[styles.toolIconContainer, { backgroundColor: toolColor + '30' }]}>
+                          <IconSymbol
+                            ios_icon_name={toolIcon}
+                            android_material_icon_name={toolIcon}
+                            size={24}
+                            color="#FFFFFF"
+                          />
+                        </View>
+                        <Text style={styles.toolName}>{tool.title}</Text>
+                        <Text style={styles.toolDescription}>{tool.description}</Text>
+                        <View style={styles.toolFooter}>
+                          <View style={styles.durationBadge}>
+                            <IconSymbol
+                              ios_icon_name="schedule"
+                              android_material_icon_name="schedule"
+                              size={14}
+                              color="rgba(255, 255, 255, 0.9)"
+                            />
+                            <Text style={styles.durationText}>{tool.duration_minutes} min</Text>
+                          </View>
+                        </View>
+                      </LinearGradient>
+                    </ImageBackground>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })}
           </View>
         </View>
 
@@ -251,7 +257,7 @@ export default function SleepScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Log Session Modal */}
+      {/* Tool Content Modal */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -261,37 +267,83 @@ export default function SleepScreen() {
         <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.background }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={[styles.modalCancel, { color: theme.primary }]}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>Log Session</Text>
-            <TouchableOpacity onPress={handleLogSession}>
-              <Text style={[styles.modalSave, { color: theme.primary }]}>Save</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.modalContent}>
-            <View style={[styles.selectedToolCard, { backgroundColor: theme.card }]}>
               <IconSymbol
-                ios_icon_name={sleepTools.find(t => t.id === selectedTool)?.icon || 'bedtime'}
-                android_material_icon_name={sleepTools.find(t => t.id === selectedTool)?.icon || 'bedtime'}
-                size={48}
-                color={sleepTools.find(t => t.id === selectedTool)?.color || theme.primary}
+                ios_icon_name="close"
+                android_material_icon_name="close"
+                size={24}
+                color={theme.text}
               />
-              <Text style={[styles.selectedToolName, { color: theme.text }]}>
-                {sleepTools.find(t => t.id === selectedTool)?.name}
-              </Text>
-            </View>
-
-            <Text style={[styles.label, { color: theme.text }]}>Duration (minutes)</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.card, color: theme.text, borderColor: theme.border }]}
-              value={duration}
-              onChangeText={setDuration}
-              placeholder="e.g., 10"
-              placeholderTextColor={theme.textSecondary}
-              keyboardType="numeric"
-            />
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
+              {selectedTool?.title}
+            </Text>
+            <View style={{ width: 24 }} />
           </View>
+
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            {selectedTool && (
+              <>
+                <View style={[styles.modalToolCard, { backgroundColor: theme.card }]}>
+                  <View style={[styles.modalIconContainer, { backgroundColor: getToolColor(selectedTool.tool_type) + '30' }]}>
+                    <IconSymbol
+                      ios_icon_name={getToolIcon(selectedTool.tool_type)}
+                      android_material_icon_name={getToolIcon(selectedTool.tool_type)}
+                      size={48}
+                      color={getToolColor(selectedTool.tool_type)}
+                    />
+                  </View>
+                  <Text style={[styles.modalToolDescription, { color: theme.textSecondary }]}>
+                    {selectedTool.description}
+                  </Text>
+                  <View style={styles.modalDurationRow}>
+                    <IconSymbol
+                      ios_icon_name="schedule"
+                      android_material_icon_name="schedule"
+                      size={16}
+                      color={theme.textSecondary}
+                    />
+                    <Text style={[styles.modalDuration, { color: theme.textSecondary }]}>
+                      {durationText}
+                    </Text>
+                  </View>
+                </View>
+
+                {loadingContent ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={theme.primary} />
+                    <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+                      Loading content...
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={[styles.contentCard, { backgroundColor: theme.card }]}>
+                    <Text style={[styles.contentTitle, { color: theme.text }]}>Guide</Text>
+                    <Text style={[styles.contentText, { color: theme.text }]}>
+                      {toolContent}
+                    </Text>
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.startButton, { backgroundColor: theme.primary }]}
+                  onPress={() => {
+                    console.log('[SleepScreen] User started tool:', selectedTool.title);
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    Alert.alert('Tool Started', `Enjoy your ${selectedTool.title} session`);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <IconSymbol
+                    ios_icon_name="play-arrow"
+                    android_material_icon_name="play-arrow"
+                    size={24}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.startButtonText}>Begin Session</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </ScrollView>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -323,31 +375,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 24,
   },
-  summaryCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 32,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  summaryText: {
-    flex: 1,
-  },
-  summaryTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  summaryValue: {
-    fontSize: 14,
-  },
   section: {
     marginBottom: 32,
   },
@@ -371,7 +398,7 @@ const styles = StyleSheet.create({
   toolCard: {
     borderRadius: 20,
     overflow: 'hidden',
-    height: 180,
+    height: 220,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -389,6 +416,23 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: 'flex-end',
   },
+  premiumBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  premiumText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFD700',
+  },
   toolIconContainer: {
     width: 48,
     height: 48,
@@ -401,12 +445,28 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   toolDescription: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.9)',
     lineHeight: 20,
+    marginBottom: 12,
+  },
+  toolFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  durationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  durationText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '600',
   },
   tipsCard: {
     borderRadius: 16,
@@ -439,16 +499,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-  },
-  modalCancel: {
-    fontSize: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
-  },
-  modalSave: {
-    fontSize: 16,
     fontWeight: '600',
   },
   modalContent: {
@@ -456,28 +511,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 20,
   },
-  selectedToolCard: {
+  modalToolCard: {
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
-  selectedToolName: {
-    fontSize: 20,
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  modalToolDescription: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 12,
+  },
+  modalDurationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  modalDuration: {
+    fontSize: 14,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 14,
     marginTop: 12,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-    marginTop: 16,
+  contentCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
   },
-  input: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+  contentTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  contentText: {
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  startButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginBottom: 40,
+    gap: 8,
+  },
+  startButtonText: {
     fontSize: 16,
-    borderWidth: 1,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

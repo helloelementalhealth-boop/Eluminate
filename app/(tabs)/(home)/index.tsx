@@ -58,7 +58,6 @@ export default function HomeScreen() {
       console.log('[HomeScreen] Weekly quote loaded:', quote);
     } catch (error) {
       console.error('[HomeScreen] Failed to load weekly quote:', error);
-      // Fallback quote
       setWeeklyQuote({
         id: 'fallback',
         quote_text: 'Welcome to your wellness journey. Take a moment to breathe and be present.',
@@ -76,7 +75,6 @@ export default function HomeScreen() {
         setMovementVisuals(visuals);
         console.log('[HomeScreen] Movement visuals loaded:', visuals.length, 'items');
       } else {
-        // Use fallback visuals
         console.log('[HomeScreen] No visuals from backend, using fallback images');
         setMovementVisuals([
           {
@@ -119,7 +117,6 @@ export default function HomeScreen() {
       }
     } catch (error) {
       console.error('[HomeScreen] Failed to load movement visuals:', error);
-      // Fall back to default visuals
       setMovementVisuals([
         {
           id: '1',
@@ -162,13 +159,13 @@ export default function HomeScreen() {
   }, []);
 
   const handleRegenerateQuote = async () => {
-    console.log('[HomeScreen] User tapped regenerate quote');
+    console.log('[HomeScreen] User tapped regenerate quote - generating AI-powered intention');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoadingQuote(true);
     try {
       const newQuote = await quotesApi.regenerateQuote();
       setWeeklyQuote(newQuote);
-      console.log('[HomeScreen] New quote generated:', newQuote);
+      console.log('[HomeScreen] New AI-generated intention:', newQuote);
     } catch (error) {
       console.error('[HomeScreen] Failed to regenerate quote:', error);
     } finally {
@@ -181,6 +178,8 @@ export default function HomeScreen() {
     loadWeeklyQuote();
     loadMovementVisuals();
   }, [loadOverview, loadWeeklyQuote, loadMovementVisuals]);
+
+  const greetingText = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
@@ -200,7 +199,7 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Weekly Quote Hero Section */}
+        {/* Weekly Quote Hero Section - Removed app name */}
         <Animated.View entering={FadeIn.duration(600)} style={styles.heroSection}>
           <ImageBackground
             source={{ uri: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80' }}
@@ -217,18 +216,17 @@ export default function HomeScreen() {
             >
               <View style={[styles.header, Platform.OS === 'android' && { paddingTop: 48 }]}>
                 <Text style={[styles.greeting, { color: theme.textSecondary }]}>
-                  {new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening'}
+                  {greetingText}
                 </Text>
-                <Text style={[styles.appName, { color: theme.text }]}>Hello Wellness</Text>
               </View>
 
               {weeklyQuote && (
                 <View style={styles.quoteContainer}>
                   <Text style={[styles.quoteLabel, { color: theme.textSecondary }]}>
-                    This Week's Intention
+                    This Week&apos;s Intention
                   </Text>
                   <Text style={[styles.quoteText, { color: theme.text }]}>
-                    "{weeklyQuote.quote_text}"
+                    &quot;{weeklyQuote.quote_text}&quot;
                   </Text>
                   <TouchableOpacity
                     onPress={handleRegenerateQuote}
@@ -305,7 +303,7 @@ export default function HomeScreen() {
 
         {/* Today's Rhythm */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Today's Rhythm</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Today&apos;s Rhythm</Text>
           <View style={styles.rhythmGrid}>
             <TouchableOpacity
               style={[styles.rhythmCard, { backgroundColor: theme.card }]}
@@ -325,8 +323,9 @@ export default function HomeScreen() {
               </View>
               <Text style={[styles.rhythmLabel, { color: theme.text }]}>Nourishment</Text>
               <Text style={[styles.rhythmValue, { color: theme.textSecondary }]}>
-                {overview?.nutrition?.total_calories || 0} kcal
+                {overview?.nutrition?.total_calories || 0}
               </Text>
+              <Text style={[styles.rhythmUnit, { color: theme.textSecondary }]}>kcal</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -347,8 +346,9 @@ export default function HomeScreen() {
               </View>
               <Text style={[styles.rhythmLabel, { color: theme.text }]}>Movement</Text>
               <Text style={[styles.rhythmValue, { color: theme.textSecondary }]}>
-                {overview?.workouts?.count || 0} sessions
+                {overview?.workouts?.count || 0}
               </Text>
+              <Text style={[styles.rhythmUnit, { color: theme.textSecondary }]}>sessions</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -369,8 +369,9 @@ export default function HomeScreen() {
               </View>
               <Text style={[styles.rhythmLabel, { color: theme.text }]}>Presence</Text>
               <Text style={[styles.rhythmValue, { color: theme.textSecondary }]}>
-                {overview?.meditation?.total_minutes || 0} min
+                {overview?.meditation?.total_minutes || 0}
               </Text>
+              <Text style={[styles.rhythmUnit, { color: theme.textSecondary }]}>min</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -390,9 +391,7 @@ export default function HomeScreen() {
                 />
               </View>
               <Text style={[styles.rhythmLabel, { color: theme.text }]}>Reflection</Text>
-              <Text style={[styles.rhythmValue, { color: theme.textSecondary }]}>
-                Journal
-              </Text>
+              <Text style={[styles.rhythmValue, { color: theme.textSecondary }]}>Journal</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -437,11 +436,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-  },
-  appName: {
-    fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: -0.5,
   },
   quoteContainer: {
     paddingHorizontal: 24,
@@ -520,10 +514,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 4,
   },
-  movementDuration: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
   videoIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -563,6 +553,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   rhythmValue: {
+    fontSize: 13,
+  },
+  rhythmUnit: {
     fontSize: 13,
   },
 });

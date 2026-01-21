@@ -13,6 +13,7 @@ export type WorkoutType = 'strength' | 'cardio' | 'flexibility' | 'sports';
 export type PracticeType = 'breathwork' | 'mindfulness' | 'body_scan' | 'loving_kindness' | 'gratitude';
 export type ActivityType = 'steps' | 'sleep' | 'water' | 'mood_check';
 export type GoalType = 'daily_calories' | 'daily_protein' | 'weekly_workouts' | 'daily_meditation' | 'daily_steps' | 'daily_water' | 'daily_sleep';
+export type SleepToolType = 'breathwork' | 'body_scan' | 'sleep_story' | 'ambient_sounds' | 'gratitude' | 'wind_down';
 
 export interface JournalEntry {
   id: string;
@@ -86,6 +87,18 @@ export interface WellnessGoal {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface SleepTool {
+  id: string;
+  tool_type: SleepToolType;
+  title: string;
+  description: string;
+  content?: string;
+  duration_minutes: number;
+  is_premium: boolean;
+  audio_url?: string;
+  created_at: string;
 }
 
 // API helper function
@@ -357,5 +370,21 @@ export const preferencesApi = {
   },
   async getCurrentTheme(): Promise<VisualTheme> {
     return apiCall<VisualTheme>('/api/preferences/current-theme', { method: 'GET' });
+  },
+};
+
+// Sleep Tools API
+export const sleepApi = {
+  async getTools(): Promise<SleepTool[]> {
+    return apiCall<SleepTool[]>('/api/sleep/tools', { method: 'GET' });
+  },
+  async getTool(id: string): Promise<SleepTool> {
+    return apiCall<SleepTool>(`/api/sleep/tools/${id}`, { method: 'GET' });
+  },
+  async generateContent(id: string, durationMinutes: number): Promise<{ content: string }> {
+    return apiCall<{ content: string }>(`/api/sleep/tools/${id}/generate-content`, {
+      method: 'POST',
+      body: JSON.stringify({ duration_minutes: durationMinutes }),
+    });
   },
 };
