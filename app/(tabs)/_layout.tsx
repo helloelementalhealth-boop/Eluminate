@@ -32,8 +32,8 @@ export default function TabLayout() {
     {
       name: 'sleep',
       route: '/(tabs)/sleep',
-      icon: 'bedtime',
-      label: 'Sleep',
+      icon: 'spa',
+      label: 'Wellness',
     },
     {
       name: 'profile',

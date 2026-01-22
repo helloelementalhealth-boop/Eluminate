@@ -15,138 +15,170 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Stack, useRouter } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { useTheme, useAdminAuth } from '@/contexts/WidgetContext';
-import { sleepApi, SleepTool } from '@/utils/api';
+import { BACKEND_URL, WellnessProgram, ProgramType, DailyActivity } from '@/utils/api';
 
-type ToolType = 'breathwork' | 'body_scan' | 'sleep_story' | 'ambient_sounds' | 'gratitude' | 'wind_down';
-
-export default function SleepToolsManager() {
+export default function WellnessProgramsManager() {
   const router = useRouter();
   const { currentTheme: theme } = useTheme();
   const { isAdmin, authLoading } = useAdminAuth();
-  const [tools, setTools] = useState<SleepTool[]>([]);
+  const [programs, setPrograms] = useState<WellnessProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingTool, setEditingTool] = useState<SleepTool | null>(null);
+  const [editingProgram, setEditingProgram] = useState<WellnessProgram | null>(null);
 
   // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [toolType, setToolType] = useState<ToolType>('breathwork');
-  const [durationMinutes, setDurationMinutes] = useState('');
-  const [content, setContent] = useState('');
+  const [programType, setProgramType] = useState<ProgramType>('stress_relief');
+  const [durationDays, setDurationDays] = useState('');
   const [isPremium, setIsPremium] = useState(false);
+  const [dailyActivitiesJson, setDailyActivitiesJson] = useState('');
 
   useEffect(() => {
-    loadTools();
+    loadPrograms();
   }, []);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
-      console.log('[SleepToolsManager] Not admin, redirecting');
+      console.log('[WellnessProgramsManager] Not admin, redirecting');
       router.replace('/admin');
     }
   }, [authLoading, isAdmin, router]);
 
-  const loadTools = async () => {
-    console.log('[SleepToolsManager] Loading sleep tools (deprecated feature)');
+  const loadPrograms = async () => {
+    console.log('[WellnessProgramsManager] Loading wellness programs');
     setLoading(true);
     try {
-      const data = await sleepApi.getTools();
-      setTools(data);
-      console.log('[SleepToolsManager] Loaded tools:', data.length);
+      const response = await fetch(`${BACKEND_URL}/api/wellness/programs`);
+      if (!response.ok) {
+        throw new Error(`Failed to load programs: ${response.status}`);
+      }
+      const data = await response.json();
+      setPrograms(data);
+      console.log('[WellnessProgramsManager] Loaded programs:', data.length);
     } catch (error) {
-      console.error('[SleepToolsManager] Failed to load tools:', error);
-      Alert.alert('Error', 'Failed to load sleep tools');
+      console.error('[WellnessProgramsManager] Failed to load programs:', error);
+      Alert.alert('Error', 'Failed to load wellness programs');
+      setPrograms([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddTool = () => {
-    console.log('[SleepToolsManager] Adding new tool');
-    setEditingTool(null);
+  const handleAddProgram = () => {
+    console.log('[WellnessProgramsManager] Adding new program');
+    setEditingProgram(null);
     setTitle('');
     setDescription('');
-    setToolType('breathwork');
-    setDurationMinutes('');
-    setContent('');
+    setProgramType('stress_relief');
+    setDurationDays('');
     setIsPremium(false);
+    setDailyActivitiesJson('[]');
     setModalVisible(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handleEditTool = (tool: SleepTool) => {
-    console.log('[SleepToolsManager] Editing tool:', tool.id);
-    setEditingTool(tool);
-    setTitle(tool.title);
-    setDescription(tool.description);
-    setToolType(tool.tool_type as ToolType);
-    setDurationMinutes(tool.duration_minutes.toString());
-    setContent(tool.content || '');
-    setIsPremium(tool.is_premium);
+  const handleEditProgram = (program: WellnessProgram) => {
+    console.log('[WellnessProgramsManager] Editing program:', program.id);
+    setEditingProgram(program);
+    setTitle(program.title);
+    setDescription(program.description);
+    setProgramType(program.program_type);
+    setDurationDays(program.duration_days.toString());
+    setIsPremium(program.is_premium);
+    setDailyActivitiesJson(JSON.stringify(program.daily_activities || [], null, 2));
     setModalVisible(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handleSaveTool = async () => {
-    if (!title || !description || !durationMinutes) {
+  const handleSaveProgram = async () => {
+    if (!title || !description || !durationDays) {
       Alert.alert('Missing Fields', 'Please fill in all required fields');
       return;
     }
 
-    console.log('[SleepToolsManager] Saving tool');
+    let parsedActivities: DailyActivity[] = [];
+    try {
+      parsedActivities = JSON.parse(dailyActivitiesJson);
+      if (!Array.isArray(parsedActivities)) {
+        throw new Error('Daily activities must be an array');
+      }
+    } catch (error) {
+      Alert.alert('Invalid JSON', 'Please enter valid JSON for daily activities');
+      return;
+    }
+
+    console.log('[WellnessProgramsManager] Saving program');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      const toolData = {
+      const programData = {
         title,
         description,
-        tool_type: toolType,
-        duration_minutes: parseInt(durationMinutes),
-        content: content || undefined,
+        program_type: programType,
+        duration_days: parseInt(durationDays),
         is_premium: isPremium,
+        daily_activities: parsedActivities,
       };
 
-      if (editingTool) {
-        // Update existing tool
-        await sleepApi.updateTool(editingTool.id, toolData);
-        Alert.alert('Success', 'Sleep tool updated successfully');
-      } else {
-        // Create new tool
-        await sleepApi.createTool(toolData);
-        Alert.alert('Success', 'Sleep tool created successfully');
+      const url = editingProgram
+        ? `${BACKEND_URL}/api/wellness/programs/${editingProgram.id}`
+        : `${BACKEND_URL}/api/wellness/programs`;
+
+      const response = await fetch(url, {
+        method: editingProgram ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(programData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save program: ${response.status} - ${errorText}`);
       }
 
+      Alert.alert('Success', editingProgram ? 'Program updated successfully' : 'Program created successfully');
       setModalVisible(false);
-      loadTools();
+      loadPrograms();
     } catch (error) {
-      console.error('[SleepToolsManager] Failed to save tool:', error);
-      Alert.alert('Error', 'Failed to save sleep tool');
+      console.error('[WellnessProgramsManager] Failed to save program:', error);
+      Alert.alert('Error', 'Failed to save wellness program');
     }
   };
 
-  const handleDeleteTool = (tool: SleepTool) => {
+  const handleDeleteProgram = (program: WellnessProgram) => {
     Alert.alert(
-      'Delete Tool',
-      `Are you sure you want to delete "${tool.title}"?`,
+      'Delete Program',
+      `Are you sure you want to delete "${program.title}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            console.log('[SleepToolsManager] Deleting tool:', tool.id);
+            console.log('[WellnessProgramsManager] Deleting program:', program.id);
             try {
-              await sleepApi.deleteTool(tool.id);
+              const response = await fetch(`${BACKEND_URL}/api/wellness/programs/${program.id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({}),
+              });
+
+              if (!response.ok) {
+                throw new Error(`Failed to delete program: ${response.status}`);
+              }
+
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              loadTools();
+              loadPrograms();
             } catch (error) {
-              console.error('[SleepToolsManager] Failed to delete tool:', error);
-              Alert.alert('Error', 'Failed to delete sleep tool');
+              console.error('[WellnessProgramsManager] Failed to delete program:', error);
+              Alert.alert('Error', 'Failed to delete wellness program');
             }
           },
         },
@@ -154,22 +186,29 @@ export default function SleepToolsManager() {
     );
   };
 
-  const getToolIcon = (type: string): string => {
+  const getProgramIcon = (type: string): string => {
     const iconMap: Record<string, string> = {
-      breathwork: 'air',
-      body_scan: 'self-improvement',
-      sleep_story: 'menu-book',
-      ambient_sounds: 'music-note',
-      gratitude: 'favorite',
-      wind_down: 'nightlight',
+      stress_relief: 'self-improvement',
+      energy_boost: 'bolt',
+      mindful_living: 'spa',
+      better_sleep: 'bedtime',
+      gratitude_journey: 'favorite',
+      self_compassion: 'favorite-border',
     };
-    return iconMap[type] || 'bedtime';
+    return iconMap[type] || 'star';
   };
 
-  const toolTypes: ToolType[] = ['breathwork', 'body_scan', 'sleep_story', 'ambient_sounds', 'gratitude', 'wind_down'];
+  const programTypes: ProgramType[] = [
+    'stress_relief',
+    'energy_boost',
+    'mindful_living',
+    'better_sleep',
+    'gratitude_journey',
+    'self_compassion',
+  ];
 
-  const modalTitle = editingTool ? 'Edit Sleep Tool' : 'Add Sleep Tool';
-  const saveButtonText = editingTool ? 'Update' : 'Create';
+  const modalTitle = editingProgram ? 'Edit Wellness Program' : 'Add Wellness Program';
+  const saveButtonText = editingProgram ? 'Update' : 'Create';
 
   if (authLoading) {
     return (
@@ -186,7 +225,7 @@ export default function SleepToolsManager() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Sleep Tools (Deprecated)',
+          title: 'Wellness Programs',
           headerStyle: { backgroundColor: theme.background },
           headerTintColor: theme.text,
         }}
@@ -194,13 +233,13 @@ export default function SleepToolsManager() {
 
       <View style={[styles.header, Platform.OS === 'android' && { paddingTop: 48 }]}>
         <View>
-          <Text style={[styles.title, { color: theme.text }]}>Sleep Tools (Deprecated)</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Wellness Programs</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            This feature has been replaced by Wellness Programs
+            Manage wellness programs and premium content
           </Text>
         </View>
         <TouchableOpacity
-          onPress={handleAddTool}
+          onPress={handleAddProgram}
           style={[styles.addButton, { backgroundColor: theme.primary }]}
           activeOpacity={0.8}
         >
@@ -217,47 +256,47 @@ export default function SleepToolsManager() {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.primary} />
             <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-              Loading tools...
+              Loading programs...
             </Text>
           </View>
-        ) : tools.length === 0 ? (
+        ) : programs.length === 0 ? (
           <View style={[styles.emptyState, { backgroundColor: theme.card }]}>
             <IconSymbol
-              ios_icon_name="bedtime"
-              android_material_icon_name="bedtime"
+              ios_icon_name="spa"
+              android_material_icon_name="spa"
               size={48}
               color={theme.textSecondary}
             />
             <Text style={[styles.emptyTitle, { color: theme.text }]}>
-              No Sleep Tools
+              No Wellness Programs
             </Text>
             <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              This feature has been replaced by Wellness Programs
+              Create your first wellness program to help users on their journey
             </Text>
           </View>
         ) : (
-          tools.map((tool, index) => (
+          programs.map((program, index) => (
             <Animated.View
-              key={tool.id}
+              key={program.id}
               entering={FadeInDown.delay(index * 50).duration(300)}
-              style={[styles.toolCard, { backgroundColor: theme.card }]}
+              style={[styles.programCard, { backgroundColor: theme.card }]}
             >
-              <View style={styles.toolHeader}>
-                <View style={styles.toolInfo}>
-                  <View style={[styles.toolIconContainer, { backgroundColor: theme.primary + '20' }]}>
+              <View style={styles.programHeader}>
+                <View style={styles.programInfo}>
+                  <View style={[styles.programIconContainer, { backgroundColor: theme.primary + '20' }]}>
                     <IconSymbol
-                      ios_icon_name={getToolIcon(tool.tool_type)}
-                      android_material_icon_name={getToolIcon(tool.tool_type)}
+                      ios_icon_name={getProgramIcon(program.program_type)}
+                      android_material_icon_name={getProgramIcon(program.program_type)}
                       size={24}
                       color={theme.primary}
                     />
                   </View>
-                  <View style={styles.toolTextContainer}>
-                    <View style={styles.toolTitleRow}>
-                      <Text style={[styles.toolTitle, { color: theme.text }]}>
-                        {tool.title}
+                  <View style={styles.programTextContainer}>
+                    <View style={styles.programTitleRow}>
+                      <Text style={[styles.programTitle, { color: theme.text }]}>
+                        {program.title}
                       </Text>
-                      {tool.is_premium && (
+                      {program.is_premium && (
                         <View style={styles.premiumBadge}>
                           <IconSymbol
                             ios_icon_name="star"
@@ -269,19 +308,19 @@ export default function SleepToolsManager() {
                         </View>
                       )}
                     </View>
-                    <Text style={[styles.toolDescription, { color: theme.textSecondary }]}>
-                      {tool.description}
+                    <Text style={[styles.programDescription, { color: theme.textSecondary }]}>
+                      {program.description}
                     </Text>
-                    <View style={styles.toolMeta}>
+                    <View style={styles.programMeta}>
                       <View style={styles.metaItem}>
                         <IconSymbol
-                          ios_icon_name="schedule"
-                          android_material_icon_name="schedule"
+                          ios_icon_name="calendar-today"
+                          android_material_icon_name="calendar-today"
                           size={14}
                           color={theme.textSecondary}
                         />
                         <Text style={[styles.metaText, { color: theme.textSecondary }]}>
-                          {tool.duration_minutes} min
+                          {program.duration_days} days
                         </Text>
                       </View>
                       <View style={styles.metaItem}>
@@ -292,16 +331,16 @@ export default function SleepToolsManager() {
                           color={theme.textSecondary}
                         />
                         <Text style={[styles.metaText, { color: theme.textSecondary }]}>
-                          {tool.tool_type.replace(/_/g, ' ')}
+                          {program.program_type.replace(/_/g, ' ')}
                         </Text>
                       </View>
                     </View>
                   </View>
                 </View>
               </View>
-              <View style={styles.toolActions}>
+              <View style={styles.programActions}>
                 <TouchableOpacity
-                  onPress={() => handleEditTool(tool)}
+                  onPress={() => handleEditProgram(program)}
                   style={[styles.actionButton, { backgroundColor: theme.primary + '20' }]}
                   activeOpacity={0.7}
                 >
@@ -316,7 +355,7 @@ export default function SleepToolsManager() {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => handleDeleteTool(tool)}
+                  onPress={() => handleDeleteProgram(program)}
                   style={[styles.actionButton, { backgroundColor: theme.error + '20' }]}
                   activeOpacity={0.7}
                 >
@@ -353,7 +392,7 @@ export default function SleepToolsManager() {
             <Text style={[styles.modalTitle, { color: theme.text }]}>
               {modalTitle}
             </Text>
-            <TouchableOpacity onPress={handleSaveTool}>
+            <TouchableOpacity onPress={handleSaveProgram}>
               <Text style={[styles.modalSave, { color: theme.primary }]}>
                 {saveButtonText}
               </Text>
@@ -366,7 +405,7 @@ export default function SleepToolsManager() {
               style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
               value={title}
               onChangeText={setTitle}
-              placeholder="e.g., Deep Breathing Exercise"
+              placeholder="e.g., 7-Day Stress Relief"
               placeholderTextColor={theme.textSecondary}
             />
 
@@ -375,38 +414,38 @@ export default function SleepToolsManager() {
               style={[styles.input, styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
               value={description}
               onChangeText={setDescription}
-              placeholder="Brief description of the tool"
+              placeholder="Brief description of the program"
               placeholderTextColor={theme.textSecondary}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
             />
 
-            <Text style={[styles.label, { color: theme.text }]}>Tool Type *</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Program Type *</Text>
             <View style={styles.typeGrid}>
-              {toolTypes.map((type) => (
+              {programTypes.map((type) => (
                 <TouchableOpacity
                   key={type}
-                  onPress={() => setToolType(type)}
+                  onPress={() => setProgramType(type)}
                   style={[
                     styles.typeButton,
                     {
-                      backgroundColor: toolType === type ? theme.primary : theme.card,
+                      backgroundColor: programType === type ? theme.primary : theme.card,
                       borderColor: theme.border,
                     },
                   ]}
                   activeOpacity={0.7}
                 >
                   <IconSymbol
-                    ios_icon_name={getToolIcon(type)}
-                    android_material_icon_name={getToolIcon(type)}
+                    ios_icon_name={getProgramIcon(type)}
+                    android_material_icon_name={getProgramIcon(type)}
                     size={20}
-                    color={toolType === type ? '#FFFFFF' : theme.text}
+                    color={programType === type ? '#FFFFFF' : theme.text}
                   />
                   <Text
                     style={[
                       styles.typeText,
-                      { color: toolType === type ? '#FFFFFF' : theme.text },
+                      { color: programType === type ? '#FFFFFF' : theme.text },
                     ]}
                   >
                     {type.replace(/_/g, ' ')}
@@ -415,25 +454,28 @@ export default function SleepToolsManager() {
               ))}
             </View>
 
-            <Text style={[styles.label, { color: theme.text }]}>Duration (minutes) *</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Duration (days) *</Text>
             <TextInput
               style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-              value={durationMinutes}
-              onChangeText={setDurationMinutes}
-              placeholder="e.g., 10"
+              value={durationDays}
+              onChangeText={setDurationDays}
+              placeholder="e.g., 7"
               placeholderTextColor={theme.textSecondary}
               keyboardType="numeric"
             />
 
-            <Text style={[styles.label, { color: theme.text }]}>Content / Guide</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Daily Activities (JSON) *</Text>
+            <Text style={[styles.helpText, { color: theme.textSecondary }]}>
+              Format: {`[{"day": 1, "title": "...", "activity": "..."}]`}
+            </Text>
             <TextInput
-              style={[styles.input, styles.textArea, { backgroundColor: theme.card, color: theme.text }]}
-              value={content}
-              onChangeText={setContent}
-              placeholder="Detailed instructions or script for the tool"
+              style={[styles.input, styles.jsonArea, { backgroundColor: theme.card, color: theme.text }]}
+              value={dailyActivitiesJson}
+              onChangeText={setDailyActivitiesJson}
+              placeholder='[{"day": 1, "title": "Day 1", "activity": "..."}]'
               placeholderTextColor={theme.textSecondary}
               multiline
-              numberOfLines={8}
+              numberOfLines={10}
               textAlignVertical="top"
             />
 
@@ -450,7 +492,7 @@ export default function SleepToolsManager() {
                   color={isPremium ? '#FFD700' : theme.textSecondary}
                 />
                 <Text style={[styles.premiumToggleText, { color: theme.text }]}>
-                  Premium Tool
+                  Premium Program
                 </Text>
               </View>
               <View
@@ -539,7 +581,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  toolCard: {
+  programCard: {
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -548,30 +590,30 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  toolHeader: {
+  programHeader: {
     marginBottom: 16,
   },
-  toolInfo: {
+  programInfo: {
     flexDirection: 'row',
     gap: 12,
   },
-  toolIconContainer: {
+  programIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  toolTextContainer: {
+  programTextContainer: {
     flex: 1,
   },
-  toolTitleRow: {
+  programTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 4,
   },
-  toolTitle: {
+  programTitle: {
     fontSize: 17,
     fontWeight: '600',
   },
@@ -589,12 +631,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFD700',
   },
-  toolDescription: {
+  programDescription: {
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 8,
   },
-  toolMeta: {
+  programMeta: {
     flexDirection: 'row',
     gap: 16,
   },
@@ -607,7 +649,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textTransform: 'capitalize',
   },
-  toolActions: {
+  programActions: {
     flexDirection: 'row',
     gap: 12,
   },
@@ -657,6 +699,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 20,
   },
+  helpText: {
+    fontSize: 12,
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
   input: {
     borderRadius: 12,
     paddingVertical: 14,
@@ -666,6 +713,11 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 80,
     paddingTop: 14,
+  },
+  jsonArea: {
+    minHeight: 200,
+    paddingTop: 14,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   typeGrid: {
     flexDirection: 'row',

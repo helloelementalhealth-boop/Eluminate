@@ -22,8 +22,8 @@ export default function TabLayout() {
         <Icon sf={{ default: 'brain.head.profile', selected: 'brain.head.profile.fill' }} drawable="self-improvement" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="sleep">
-        <Label>Sleep</Label>
-        <Icon sf={{ default: 'moon', selected: 'moon.fill' }} drawable="bedtime" />
+        <Label>Wellness</Label>
+        <Icon sf={{ default: 'sparkles', selected: 'sparkles' }} drawable="spa" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Label>Profile</Label>

@@ -21,53 +21,66 @@ import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/WidgetContext';
-import { sleepApi, SleepTool } from '@/utils/api';
+import { wellnessApi, WellnessProgram, ProgramEnrollment } from '@/utils/api';
 import { useRouter } from 'expo-router';
 
-export default function SleepScreen() {
+export default function WellnessProgramsScreen() {
   const colorScheme = useColorScheme();
   const { currentTheme: theme } = useTheme();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
-  const [tools, setTools] = useState<SleepTool[]>([]);
-  const [selectedTool, setSelectedTool] = useState<SleepTool | null>(null);
-  const [toolContent, setToolContent] = useState<string>('');
-  const [loadingContent, setLoadingContent] = useState(false);
+  const [programs, setPrograms] = useState<WellnessProgram[]>([]);
+  const [enrollments, setEnrollments] = useState<ProgramEnrollment[]>([]);
+  const [selectedProgram, setSelectedProgram] = useState<WellnessProgram | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const loadTools = async () => {
-    console.log('[SleepScreen] Loading sleep tools');
+  const loadData = async () => {
+    console.log('[WellnessPrograms] Loading programs and enrollments');
     setRefreshing(true);
     try {
-      const data = await sleepApi.getTools();
-      setTools(data);
-      console.log('[SleepScreen] Sleep tools loaded:', data.length, 'tools');
+      const [programsData, enrollmentsData] = await Promise.all([
+        wellnessApi.getPrograms(),
+        wellnessApi.getEnrollments(),
+      ]);
+      setPrograms(programsData);
+      setEnrollments(enrollmentsData);
+      console.log('[WellnessPrograms] Loaded:', programsData.length, 'programs,', enrollmentsData.length, 'enrollments');
     } catch (error) {
-      console.error('[SleepScreen] Failed to load sleep tools:', error);
-      setTools([]);
+      console.error('[WellnessPrograms] Failed to load data:', error);
+      setPrograms([]);
+      setEnrollments([]);
     } finally {
       setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    loadTools();
+    loadData();
   }, []);
 
-  const handleToolPress = async (tool: SleepTool) => {
-    console.log('[SleepScreen] User tapped tool:', tool.title, 'Premium:', tool.is_premium);
+  const isEnrolled = (programId: string) => {
+    return enrollments.some(e => e.program_id === programId && !e.is_completed);
+  };
+
+  const getEnrollment = (programId: string) => {
+    return enrollments.find(e => e.program_id === programId && !e.is_completed);
+  };
+
+  const handleProgramPress = async (program: WellnessProgram) => {
+    console.log('[WellnessPrograms] User tapped program:', program.title, 'Premium:', program.is_premium);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    if (tool.is_premium) {
+    if (program.is_premium) {
       Alert.alert(
-        'Premium Feature',
-        `${tool.title} is a premium feature. Upgrade to access advanced sleep tools and guided content.`,
+        'Premium Program',
+        `${program.title} is a premium program. Upgrade to access comprehensive wellness journeys with daily guidance.`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
             text: 'Upgrade',
             onPress: () => {
-              console.log('[SleepScreen] User tapped Upgrade');
+              console.log('[WellnessPrograms] User tapped Upgrade');
               router.push('/(tabs)/profile');
             },
           },
@@ -76,67 +89,76 @@ export default function SleepScreen() {
       return;
     }
 
-    setSelectedTool(tool);
-    setLoadingContent(true);
+    setSelectedProgram(program);
     setModalVisible(true);
+  };
+
+  const handleEnroll = async () => {
+    if (!selectedProgram) return;
+
+    console.log('[WellnessPrograms] User enrolling in program:', selectedProgram.title);
+    setLoading(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     try {
-      const fullTool = await sleepApi.getTool(tool.id);
-      setToolContent(fullTool.content || 'Content not available');
-      console.log('[SleepScreen] Tool content loaded');
+      await wellnessApi.enrollInProgram(selectedProgram.id);
+      Alert.alert('Enrolled!', `You've started the ${selectedProgram.title} program. Check back daily for your next activity.`);
+      setModalVisible(false);
+      await loadData();
     } catch (error) {
-      console.error('[SleepScreen] Failed to load tool content:', error);
-      setToolContent('Unable to load content. Please try again.');
+      console.error('[WellnessPrograms] Failed to enroll:', error);
+      Alert.alert('Error', 'Failed to enroll in program. Please try again.');
     } finally {
-      setLoadingContent(false);
+      setLoading(false);
     }
   };
 
-  const getToolIcon = (toolType: string): string => {
+  const getProgramIcon = (programType: string): string => {
     const iconMap: Record<string, string> = {
-      breathwork: 'air',
-      body_scan: 'self-improvement',
-      sleep_story: 'menu-book',
-      ambient_sounds: 'music-note',
-      gratitude: 'favorite',
-      wind_down: 'nightlight',
+      stress_relief: 'self-improvement',
+      energy_boost: 'bolt',
+      mindful_living: 'spa',
+      better_sleep: 'bedtime',
+      gratitude_journey: 'favorite',
+      self_compassion: 'favorite-border',
     };
-    return iconMap[toolType] || 'bedtime';
+    return iconMap[programType] || 'star';
   };
 
-  const getToolColor = (toolType: string): string => {
+  const getProgramColor = (programType: string): string => {
     const colorMap: Record<string, string> = {
-      breathwork: '#7A8B9B',
-      body_scan: '#8B7A9B',
-      sleep_story: '#8B9B7F',
-      ambient_sounds: '#9B8B7A',
-      gratitude: '#C4A876',
-      wind_down: '#B88B7B',
+      stress_relief: '#7A9B8B',
+      energy_boost: '#E8A87C',
+      mindful_living: '#9B8BA7',
+      better_sleep: '#7A8B9B',
+      gratitude_journey: '#C4A876',
+      self_compassion: '#B88B9B',
     };
-    return colorMap[toolType] || theme.primary;
+    return colorMap[programType] || theme.primary;
   };
 
-  const getToolImage = (toolType: string): string => {
+  const getProgramImage = (programType: string): string => {
     const imageMap: Record<string, string> = {
-      breathwork: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80',
-      body_scan: 'https://images.unsplash.com/photo-1545389336-cf090694435e?w=800&q=80',
-      sleep_story: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80',
-      ambient_sounds: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=800&q=80',
-      gratitude: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&q=80',
-      wind_down: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80',
+      stress_relief: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80',
+      energy_boost: 'https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=800&q=80',
+      mindful_living: 'https://images.unsplash.com/photo-1545389336-cf090694435e?w=800&q=80',
+      better_sleep: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80',
+      gratitude_journey: 'https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&q=80',
+      self_compassion: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80',
     };
-    return imageMap[toolType] || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80';
+    return imageMap[programType] || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80';
   };
 
-  const durationText = selectedTool ? `${selectedTool.duration_minutes} min` : '';
+  const durationText = selectedProgram ? `${selectedProgram.duration_days} days` : '';
+  const enrolledText = selectedProgram && isEnrolled(selectedProgram.id) ? 'Enrolled' : '';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
       <View style={[styles.header, Platform.OS === 'android' && { paddingTop: 48 }]}>
         <View>
-          <Text style={[styles.title, { color: theme.text }]}>Sleep & Rest</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Wellness Programs</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Tools for nighttime and deep rest
+            Guided journeys for lasting change
           </Text>
         </View>
       </View>
@@ -146,89 +168,158 @@ export default function SleepScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={loadTools} tintColor={theme.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={loadData} tintColor={theme.primary} />
         }
       >
-        {/* Sleep Tools Grid */}
+        {/* Active Programs */}
+        {enrollments.filter(e => !e.is_completed).length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Your Active Programs</Text>
+            {enrollments.filter(e => !e.is_completed).map((enrollment, index) => {
+              const program = programs.find(p => p.id === enrollment.program_id);
+              if (!program) return null;
+
+              const progressPercent = (enrollment.completed_days.length / program.duration_days) * 100;
+              const progressText = `Day ${enrollment.current_day} of ${program.duration_days}`;
+              const percentText = `${Math.round(progressPercent)}%`;
+
+              return (
+                <Animated.View
+                  key={enrollment.id}
+                  entering={FadeInDown.delay(index * 80).duration(400)}
+                  style={styles.activeCard}
+                >
+                  <TouchableOpacity
+                    style={[styles.activeCardInner, { backgroundColor: theme.card }]}
+                    onPress={() => handleProgramPress(program)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.activeCardHeader}>
+                      <View style={[styles.activeIconContainer, { backgroundColor: getProgramColor(program.program_type) + '30' }]}>
+                        <IconSymbol
+                          ios_icon_name={getProgramIcon(program.program_type)}
+                          android_material_icon_name={getProgramIcon(program.program_type)}
+                          size={24}
+                          color={getProgramColor(program.program_type)}
+                        />
+                      </View>
+                      <View style={styles.activeCardInfo}>
+                        <Text style={[styles.activeCardTitle, { color: theme.text }]}>{program.title}</Text>
+                        <Text style={[styles.activeCardProgress, { color: theme.textSecondary }]}>
+                          {progressText}
+                        </Text>
+                      </View>
+                      <Text style={[styles.activeCardPercent, { color: theme.primary }]}>{percentText}</Text>
+                    </View>
+                    <View style={[styles.progressBar, { backgroundColor: theme.textSecondary + '20' }]}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { backgroundColor: getProgramColor(program.program_type), width: `${progressPercent}%` },
+                        ]}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Available Programs */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Evening Tools</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Available Programs</Text>
           <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-            Choose what helps you unwind and prepare for rest
+            Choose a program to begin your wellness journey
           </Text>
 
-          {tools.length === 0 && !refreshing ? (
+          {programs.length === 0 && !refreshing ? (
             <View style={[styles.emptyState, { backgroundColor: theme.card }]}>
               <IconSymbol
-                ios_icon_name="bedtime"
-                android_material_icon_name="bedtime"
+                ios_icon_name="spa"
+                android_material_icon_name="spa"
                 size={48}
                 color={theme.textSecondary}
               />
               <Text style={[styles.emptyStateTitle, { color: theme.text }]}>
-                No Sleep Tools Available
+                No Programs Available
               </Text>
               <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
-                Pull down to refresh and load sleep tools
+                Pull down to refresh and load wellness programs
               </Text>
             </View>
           ) : null}
 
-          <View style={styles.toolsGrid}>
-            {tools.map((tool, index) => {
-              const toolIcon = getToolIcon(tool.tool_type);
-              const toolColor = getToolColor(tool.tool_type);
-              const toolImage = getToolImage(tool.tool_type);
+          <View style={styles.programsGrid}>
+            {programs.map((program, index) => {
+              const programIcon = getProgramIcon(program.program_type);
+              const programColor = getProgramColor(program.program_type);
+              const programImage = getProgramImage(program.program_type);
+              const enrolled = isEnrolled(program.id);
 
               return (
                 <Animated.View
-                  key={tool.id}
+                  key={program.id}
                   entering={FadeInDown.delay(index * 80).duration(400)}
-                  style={styles.toolCardContainer}
+                  style={styles.programCardContainer}
                 >
                   <TouchableOpacity
-                    style={[styles.toolCard, { backgroundColor: theme.card }]}
-                    onPress={() => handleToolPress(tool)}
+                    style={[styles.programCard, { backgroundColor: theme.card }]}
+                    onPress={() => handleProgramPress(program)}
                     activeOpacity={0.8}
                   >
                     <ImageBackground
-                      source={{ uri: toolImage }}
-                      style={styles.toolImage}
-                      imageStyle={styles.toolImageStyle}
+                      source={{ uri: programImage }}
+                      style={styles.programImage}
+                      imageStyle={styles.programImageStyle}
                     >
                       <LinearGradient
                         colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.8)']}
-                        style={styles.toolGradient}
+                        style={styles.programGradient}
                       >
-                        {tool.is_premium && (
-                          <View style={styles.premiumBadge}>
-                            <IconSymbol
-                              ios_icon_name="star"
-                              android_material_icon_name="star"
-                              size={12}
-                              color="#FFD700"
-                            />
-                            <Text style={styles.premiumText}>Premium</Text>
-                          </View>
-                        )}
-                        <View style={[styles.toolIconContainer, { backgroundColor: toolColor + '30' }]}>
+                        <View style={styles.programBadges}>
+                          {program.is_premium && (
+                            <View style={styles.premiumBadge}>
+                              <IconSymbol
+                                ios_icon_name="star"
+                                android_material_icon_name="star"
+                                size={12}
+                                color="#FFD700"
+                              />
+                              <Text style={styles.premiumText}>Premium</Text>
+                            </View>
+                          )}
+                          {enrolled && (
+                            <View style={styles.enrolledBadge}>
+                              <IconSymbol
+                                ios_icon_name="check"
+                                android_material_icon_name="check"
+                                size={12}
+                                color="#4CAF50"
+                              />
+                              <Text style={styles.enrolledText}>Active</Text>
+                            </View>
+                          )}
+                        </View>
+                        <View style={[styles.programIconContainer, { backgroundColor: programColor + '30' }]}>
                           <IconSymbol
-                            ios_icon_name={toolIcon}
-                            android_material_icon_name={toolIcon}
+                            ios_icon_name={programIcon}
+                            android_material_icon_name={programIcon}
                             size={24}
                             color="#FFFFFF"
                           />
                         </View>
-                        <Text style={styles.toolName}>{tool.title}</Text>
-                        <Text style={styles.toolDescription}>{tool.description}</Text>
-                        <View style={styles.toolFooter}>
+                        <Text style={styles.programName}>{program.title}</Text>
+                        <Text style={styles.programDescription}>{program.description}</Text>
+                        <View style={styles.programFooter}>
                           <View style={styles.durationBadge}>
                             <IconSymbol
-                              ios_icon_name="schedule"
-                              android_material_icon_name="schedule"
+                              ios_icon_name="calendar-today"
+                              android_material_icon_name="calendar-today"
                               size={14}
                               color="rgba(255, 255, 255, 0.9)"
                             />
-                            <Text style={styles.durationText}>{tool.duration_minutes} min</Text>
+                            <Text style={styles.durationText}>{program.duration_days} days</Text>
                           </View>
                         </View>
                       </LinearGradient>
@@ -240,41 +331,10 @@ export default function SleepScreen() {
           </View>
         </View>
 
-        {/* Sleep Tips */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Sleep Hygiene</Text>
-          <View style={[styles.tipsCard, { backgroundColor: theme.card }]}>
-            <View style={styles.tipRow}>
-              <Text style={styles.tipEmoji}>🌙</Text>
-              <Text style={[styles.tipText, { color: theme.text }]}>
-                Dim lights 1 hour before bed
-              </Text>
-            </View>
-            <View style={styles.tipRow}>
-              <Text style={styles.tipEmoji}>📱</Text>
-              <Text style={[styles.tipText, { color: theme.text }]}>
-                Avoid screens 30 minutes before sleep
-              </Text>
-            </View>
-            <View style={styles.tipRow}>
-              <Text style={styles.tipEmoji}>🌡️</Text>
-              <Text style={[styles.tipText, { color: theme.text }]}>
-                Keep your room cool (60-67°F)
-              </Text>
-            </View>
-            <View style={styles.tipRow}>
-              <Text style={styles.tipEmoji}>☕</Text>
-              <Text style={[styles.tipText, { color: theme.text }]}>
-                No caffeine after 2 PM
-              </Text>
-            </View>
-          </View>
-        </View>
-
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Tool Content Modal */}
+      {/* Program Details Modal */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -292,30 +352,30 @@ export default function SleepScreen() {
               />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: theme.text }]}>
-              {selectedTool?.title}
+              {selectedProgram?.title}
             </Text>
             <View style={{ width: 24 }} />
           </View>
 
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-            {selectedTool && (
-              <>
-                <View style={[styles.modalToolCard, { backgroundColor: theme.card }]}>
-                  <View style={[styles.modalIconContainer, { backgroundColor: getToolColor(selectedTool.tool_type) + '30' }]}>
+            {selectedProgram && (
+              <React.Fragment>
+                <View style={[styles.modalProgramCard, { backgroundColor: theme.card }]}>
+                  <View style={[styles.modalIconContainer, { backgroundColor: getProgramColor(selectedProgram.program_type) + '30' }]}>
                     <IconSymbol
-                      ios_icon_name={getToolIcon(selectedTool.tool_type)}
-                      android_material_icon_name={getToolIcon(selectedTool.tool_type)}
+                      ios_icon_name={getProgramIcon(selectedProgram.program_type)}
+                      android_material_icon_name={getProgramIcon(selectedProgram.program_type)}
                       size={48}
-                      color={getToolColor(selectedTool.tool_type)}
+                      color={getProgramColor(selectedProgram.program_type)}
                     />
                   </View>
-                  <Text style={[styles.modalToolDescription, { color: theme.textSecondary }]}>
-                    {selectedTool.description}
+                  <Text style={[styles.modalProgramDescription, { color: theme.textSecondary }]}>
+                    {selectedProgram.description}
                   </Text>
                   <View style={styles.modalDurationRow}>
                     <IconSymbol
-                      ios_icon_name="schedule"
-                      android_material_icon_name="schedule"
+                      ios_icon_name="calendar-today"
+                      android_material_icon_name="calendar-today"
                       size={16}
                       color={theme.textSecondary}
                     />
@@ -323,42 +383,71 @@ export default function SleepScreen() {
                       {durationText}
                     </Text>
                   </View>
+                  {enrolledText && (
+                    <View style={styles.modalEnrolledBadge}>
+                      <IconSymbol
+                        ios_icon_name="check-circle"
+                        android_material_icon_name="check-circle"
+                        size={16}
+                        color="#4CAF50"
+                      />
+                      <Text style={[styles.modalEnrolledText, { color: '#4CAF50' }]}>
+                        {enrolledText}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
-                {loadingContent ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={theme.primary} />
-                    <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-                      Loading content...
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={[styles.contentCard, { backgroundColor: theme.card }]}>
-                    <Text style={[styles.contentTitle, { color: theme.text }]}>Guide</Text>
-                    <Text style={[styles.contentText, { color: theme.text }]}>
-                      {toolContent}
-                    </Text>
+                {selectedProgram.daily_activities && selectedProgram.daily_activities.length > 0 && (
+                  <View style={[styles.activitiesCard, { backgroundColor: theme.card }]}>
+                    <Text style={[styles.activitiesTitle, { color: theme.text }]}>Daily Activities</Text>
+                    {selectedProgram.daily_activities.slice(0, 5).map((activity, index) => {
+                      const dayText = `Day ${activity.day}`;
+                      return (
+                        <View key={index} style={styles.activityRow}>
+                          <View style={[styles.dayBadge, { backgroundColor: theme.primary + '20' }]}>
+                            <Text style={[styles.dayText, { color: theme.primary }]}>{dayText}</Text>
+                          </View>
+                          <View style={styles.activityInfo}>
+                            <Text style={[styles.activityTitle, { color: theme.text }]}>{activity.title}</Text>
+                            <Text style={[styles.activityDescription, { color: theme.textSecondary }]}>
+                              {activity.activity}
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                    {selectedProgram.daily_activities.length > 5 && (
+                      <Text style={[styles.moreActivities, { color: theme.textSecondary }]}>
+                        + {selectedProgram.daily_activities.length - 5} more days
+                      </Text>
+                    )}
                   </View>
                 )}
 
-                <TouchableOpacity
-                  style={[styles.startButton, { backgroundColor: theme.primary }]}
-                  onPress={() => {
-                    console.log('[SleepScreen] User started tool:', selectedTool.title);
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    Alert.alert('Tool Started', `Enjoy your ${selectedTool.title} session`);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <IconSymbol
-                    ios_icon_name="play-arrow"
-                    android_material_icon_name="play-arrow"
-                    size={24}
-                    color="#FFFFFF"
-                  />
-                  <Text style={styles.startButtonText}>Begin Session</Text>
-                </TouchableOpacity>
-              </>
+                {!isEnrolled(selectedProgram.id) && (
+                  <TouchableOpacity
+                    style={[styles.enrollButton, { backgroundColor: theme.primary }]}
+                    onPress={handleEnroll}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <React.Fragment>
+                        <IconSymbol
+                          ios_icon_name="play-arrow"
+                          android_material_icon_name="play-arrow"
+                          size={24}
+                          color="#FFFFFF"
+                        />
+                        <Text style={styles.enrollButtonText}>Start Program</Text>
+                      </React.Fragment>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </React.Fragment>
             )}
           </ScrollView>
         </SafeAreaView>
@@ -406,13 +495,61 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 20,
   },
-  toolsGrid: {
+  activeCard: {
+    marginBottom: 16,
+  },
+  activeCardInner: {
+    borderRadius: 16,
+    padding: 20,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  activeCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  activeIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  activeCardInfo: {
+    flex: 1,
+  },
+  activeCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  activeCardProgress: {
+    fontSize: 14,
+  },
+  activeCardPercent: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  progressBar: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  programsGrid: {
     gap: 16,
   },
-  toolCardContainer: {
+  programCardContainer: {
     marginBottom: 0,
   },
-  toolCard: {
+  programCard: {
     borderRadius: 20,
     overflow: 'hidden',
     height: 220,
@@ -421,22 +558,26 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
-  toolImage: {
+  programImage: {
     width: '100%',
     height: '100%',
   },
-  toolImageStyle: {
+  programImageStyle: {
     resizeMode: 'cover',
   },
-  toolGradient: {
+  programGradient: {
     flex: 1,
     padding: 20,
     justifyContent: 'flex-end',
   },
-  premiumBadge: {
+  programBadges: {
     position: 'absolute',
     top: 16,
     right: 16,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  premiumBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -450,7 +591,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFD700',
   },
-  toolIconContainer: {
+  enrolledBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  enrolledText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  programIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
@@ -458,19 +613,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
   },
-  toolName: {
+  programName: {
     fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 6,
   },
-  toolDescription: {
+  programDescription: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.9)',
     lineHeight: 20,
     marginBottom: 12,
   },
-  toolFooter: {
+  programFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -485,26 +640,21 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '600',
   },
-  tipsCard: {
+  emptyState: {
     borderRadius: 16,
-    padding: 20,
-    gap: 16,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  tipRow: {
-    flexDirection: 'row',
+    padding: 40,
     alignItems: 'center',
-    gap: 12,
+    marginBottom: 24,
   },
-  tipEmoji: {
-    fontSize: 24,
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 8,
   },
-  tipText: {
+  emptyStateText: {
     fontSize: 15,
-    flex: 1,
+    textAlign: 'center',
     lineHeight: 22,
   },
   modalContainer: {
@@ -528,7 +678,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 20,
   },
-  modalToolCard: {
+  modalProgramCard: {
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -542,7 +692,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 16,
   },
-  modalToolDescription: {
+  modalProgramDescription: {
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
@@ -557,29 +707,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  loadingContainer: {
+  modalEnrolledBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingText: {
-    fontSize: 14,
+    gap: 6,
     marginTop: 12,
   },
-  contentCard: {
+  modalEnrolledText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  activitiesCard: {
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
   },
-  contentTitle: {
+  activitiesTitle: {
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 16,
   },
-  contentText: {
-    fontSize: 15,
-    lineHeight: 24,
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
   },
-  startButton: {
+  dayBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginRight: 12,
+  },
+  dayText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  activityInfo: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  activityDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  moreActivities: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  enrollButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -588,26 +768,9 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     gap: 8,
   },
-  startButtonText: {
+  enrollButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
-  },
-  emptyState: {
-    borderRadius: 16,
-    padding: 40,
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
   },
 });

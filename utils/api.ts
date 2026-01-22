@@ -14,6 +14,7 @@ export type PracticeType = 'breathwork' | 'mindfulness' | 'body_scan' | 'loving_
 export type ActivityType = 'steps' | 'sleep' | 'water' | 'mood_check';
 export type GoalType = 'daily_calories' | 'daily_protein' | 'weekly_workouts' | 'daily_meditation' | 'daily_steps' | 'daily_water' | 'daily_sleep';
 export type SleepToolType = 'breathwork' | 'body_scan' | 'sleep_story' | 'ambient_sounds' | 'gratitude' | 'wind_down';
+export type ProgramType = 'stress_relief' | 'energy_boost' | 'mindful_living' | 'better_sleep' | 'gratitude_journey' | 'self_compassion';
 
 export interface JournalEntry {
   id: string;
@@ -99,6 +100,36 @@ export interface SleepTool {
   is_premium: boolean;
   audio_url?: string;
   created_at: string;
+}
+
+export interface DailyActivity {
+  day: number;
+  title: string;
+  activity: string;
+}
+
+export interface WellnessProgram {
+  id: string;
+  program_type: ProgramType;
+  title: string;
+  description: string;
+  duration_days: number;
+  is_premium: boolean;
+  daily_activities?: DailyActivity[];
+  image_url?: string;
+  created_at: string;
+}
+
+export interface ProgramEnrollment {
+  id: string;
+  user_id: string;
+  program_id: string;
+  enrolled_at: string;
+  current_day: number;
+  completed_days: number[];
+  is_completed: boolean;
+  completed_at?: string;
+  program?: WellnessProgram;
 }
 
 // API helper function
@@ -373,7 +404,7 @@ export const preferencesApi = {
   },
 };
 
-// Sleep Tools API
+// Sleep Tools API (deprecated - keeping for backward compatibility)
 export const sleepApi = {
   async getTools(): Promise<SleepTool[]> {
     return apiCall<SleepTool[]>('/api/sleep/tools', { method: 'GET' });
@@ -403,6 +434,37 @@ export const sleepApi = {
     return apiCall<{ content: string }>(`/api/sleep/tools/${id}/generate-content`, {
       method: 'POST',
       body: JSON.stringify({ duration_minutes: durationMinutes }),
+    });
+  },
+};
+
+// Wellness Programs API
+export const wellnessApi = {
+  async getPrograms(): Promise<WellnessProgram[]> {
+    return apiCall<WellnessProgram[]>('/api/wellness/programs', { method: 'GET' });
+  },
+  async getProgram(id: string): Promise<WellnessProgram> {
+    return apiCall<WellnessProgram>(`/api/wellness/programs/${id}`, { method: 'GET' });
+  },
+  async getEnrollments(): Promise<ProgramEnrollment[]> {
+    return apiCall<ProgramEnrollment[]>('/api/wellness/enrollments', { method: 'GET' });
+  },
+  async enrollInProgram(programId: string): Promise<ProgramEnrollment> {
+    return apiCall<ProgramEnrollment>('/api/wellness/enrollments', {
+      method: 'POST',
+      body: JSON.stringify({ program_id: programId }),
+    });
+  },
+  async updateProgress(enrollmentId: string, dayNumber: number): Promise<ProgramEnrollment> {
+    return apiCall<ProgramEnrollment>(`/api/wellness/enrollments/${enrollmentId}/progress`, {
+      method: 'PUT',
+      body: JSON.stringify({ day_number: dayNumber }),
+    });
+  },
+  async unenroll(enrollmentId: string): Promise<{ success: boolean }> {
+    return apiCall<{ success: boolean }>(`/api/wellness/enrollments/${enrollmentId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({}),
     });
   },
 };
