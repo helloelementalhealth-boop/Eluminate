@@ -159,15 +159,36 @@ export default function HomeScreen() {
   }, []);
 
   const handleRegenerateQuote = async () => {
-    console.log('[HomeScreen] User tapped regenerate quote - generating AI-powered intention');
+    console.log('[HomeScreen] User tapped New Intention button');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoadingQuote(true);
     try {
+      console.log('[HomeScreen] Calling regenerateQuote API');
       const newQuote = await quotesApi.regenerateQuote();
+      console.log('[HomeScreen] New AI-generated intention received:', newQuote);
       setWeeklyQuote(newQuote);
-      console.log('[HomeScreen] New AI-generated intention:', newQuote);
     } catch (error) {
       console.error('[HomeScreen] Failed to regenerate quote:', error);
+      // Generate a fallback quote with timestamp to show it changed
+      const fallbackQuotes = [
+        'Today, I choose presence over perfection.',
+        'I am worthy of rest and renewal.',
+        'My body knows what it needs. I will listen.',
+        'Progress is not linear, and that is okay.',
+        'I honor my journey, exactly as it is.',
+        'Small steps forward are still forward.',
+        'I give myself permission to begin again.',
+        'My wellness is a practice, not a destination.',
+      ];
+      const randomQuote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+      const newFallbackQuote = {
+        id: `fallback-${Date.now()}`,
+        quote_text: randomQuote,
+        week_start_date: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+      console.log('[HomeScreen] Using fallback quote:', newFallbackQuote);
+      setWeeklyQuote(newFallbackQuote);
     } finally {
       setLoadingQuote(false);
     }
