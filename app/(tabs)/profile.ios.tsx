@@ -65,6 +65,12 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleThemeSettings = () => {
+    console.log('[ProfileScreen] User tapped Theme Settings');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/theme-settings' as any);
+  };
+
   const handlePrivacy = () => {
     console.log('[ProfileScreen] User tapped Privacy Policy');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -129,6 +135,8 @@ export default function ProfileScreen() {
   const upgradeButtonText = 'Upgrade to Premium';
   const todayActivityTitle = 'Today\'s Activity';
   const settingsTitle = 'Settings';
+  const themeText = 'Visual Themes';
+  const themeDescriptionText = 'Customize your color palette';
   const privacyText = 'Privacy Policy';
   const privacyDescriptionText = 'How we protect your data';
   const termsText = 'Terms of Service';
@@ -242,6 +250,39 @@ export default function ProfileScreen() {
               {settingsTitle}
             </Text>
             <View style={[styles.settingsCard, { backgroundColor: theme.card }]}>
+              <TouchableOpacity
+                style={styles.settingItem}
+                onPress={handleThemeSettings}
+                activeOpacity={0.7}
+              >
+                <View style={styles.settingLeft}>
+                  <View style={[styles.settingIcon, { backgroundColor: theme.primary + '20' }]}>
+                    <IconSymbol
+                      ios_icon_name="palette"
+                      android_material_icon_name="palette"
+                      size={20}
+                      color={theme.primary}
+                    />
+                  </View>
+                  <View style={styles.settingTextContainer}>
+                    <Text style={[styles.settingLabel, { color: theme.text }]}>
+                      {themeText}
+                    </Text>
+                    <Text style={[styles.settingDescription, { color: theme.textSecondary }]}>
+                      {themeDescriptionText}
+                    </Text>
+                  </View>
+                </View>
+                <IconSymbol
+                  ios_icon_name="chevron-right"
+                  android_material_icon_name="chevron-right"
+                  size={20}
+                  color={theme.textSecondary}
+                />
+              </TouchableOpacity>
+
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
               <TouchableOpacity
                 style={styles.settingItem}
                 onPress={handlePrivacy}
