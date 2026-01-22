@@ -381,6 +381,24 @@ export const sleepApi = {
   async getTool(id: string): Promise<SleepTool> {
     return apiCall<SleepTool>(`/api/sleep/tools/${id}`, { method: 'GET' });
   },
+  async createTool(input: Omit<SleepTool, 'id' | 'created_at'>): Promise<SleepTool> {
+    return apiCall<SleepTool>('/api/sleep/tools', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+  async updateTool(id: string, input: Partial<Omit<SleepTool, 'id' | 'created_at'>>): Promise<SleepTool> {
+    return apiCall<SleepTool>(`/api/sleep/tools/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  },
+  async deleteTool(id: string): Promise<{ success: boolean }> {
+    return apiCall<{ success: boolean }>(`/api/sleep/tools/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({}),
+    });
+  },
   async generateContent(id: string, durationMinutes: number): Promise<{ content: string }> {
     return apiCall<{ content: string }>(`/api/sleep/tools/${id}/generate-content`, {
       method: 'POST',

@@ -169,12 +169,20 @@ export default function MindfulnessScreen() {
           </View>
         </Animated.View>
 
-        {/* Journal Prompt Card - Moved below stats */}
+        {/* Journal Prompt Card - Improved mobile positioning */}
         <Animated.View
           entering={FadeInDown.delay(50).duration(300)}
           style={[styles.journalPromptCard, { backgroundColor: theme.primary + '15', borderColor: theme.primary + '30' }]}
         >
-          <View style={styles.journalPromptContent}>
+          <View style={styles.journalPromptHeader}>
+            <View style={[styles.journalIconContainer, { backgroundColor: theme.primary + '30' }]}>
+              <IconSymbol
+                ios_icon_name="edit"
+                android_material_icon_name="edit"
+                size={24}
+                color={theme.primary}
+              />
+            </View>
             <View style={styles.journalPromptTextContainer}>
               <Text style={[styles.journalPromptTitle, { color: theme.text }]}>
                 Reflect on your journey
@@ -183,24 +191,24 @@ export default function MindfulnessScreen() {
                 Capture your thoughts and insights
               </Text>
             </View>
-            <TouchableOpacity
-              onPress={() => {
-                console.log('[MindfulnessScreen] Navigating to journal');
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/(tabs)/(history)/new-entry');
-              }}
-              style={[styles.journalPromptButton, { backgroundColor: theme.primary }]}
-              activeOpacity={0.8}
-            >
-              <IconSymbol
-                ios_icon_name="edit"
-                android_material_icon_name="edit"
-                size={20}
-                color="#FFFFFF"
-              />
-              <Text style={styles.journalPromptButtonText}>Journal</Text>
-            </TouchableOpacity>
           </View>
+          <TouchableOpacity
+            onPress={() => {
+              console.log('[MindfulnessScreen] Navigating to journal');
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/(tabs)/(history)/new-entry');
+            }}
+            style={[styles.journalPromptButton, { backgroundColor: theme.primary }]}
+            activeOpacity={0.8}
+          >
+            <IconSymbol
+              ios_icon_name="edit"
+              android_material_icon_name="edit"
+              size={18}
+              color="#FFFFFF"
+            />
+            <Text style={styles.journalPromptButtonText}>Start Journaling</Text>
+          </TouchableOpacity>
         </Animated.View>
 
         {/* Sessions List */}
@@ -453,35 +461,42 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     borderWidth: 1,
   },
-  journalPromptContent: {
+  journalPromptHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 12,
+  },
+  journalIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   journalPromptTextContainer: {
     flex: 1,
-    marginRight: 16,
   },
   journalPromptTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     marginBottom: 4,
   },
   journalPromptSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
   },
   journalPromptButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    justifyContent: 'center',
+    paddingVertical: 14,
     borderRadius: 12,
-    gap: 6,
+    gap: 8,
   },
   journalPromptButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
   emptyState: {
